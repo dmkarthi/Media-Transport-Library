@@ -1,0 +1,443 @@
+./build/RxApp-X11 --sip 192.168.50.58 --port 0000:72:00.0 --display
+Signal handlers installed. Press Ctrl+C to stop.
+Configuring MTL with 3 RX queues for 1 sessions
+MTL: 2025-11-04 11:14:44, dev_eal_init(0), port_param: 0000:72:00.0
+MTL: 2025-11-04 11:14:44, dev_eal_init, main_lcore: 0
+MTL: 2025-11-04 11:14:44, dev_eal_init, wait eal_init_thread done
+EAL: Detected CPU lcores: 16
+EAL: Detected NUMA nodes: 1
+EAL: Detected shared linkage of DPDK
+EAL: Selected IOVA mode 'VA'
+EAL: No free 1048576 kB hugepages reported on node 0
+EAL: VFIO support initialized
+EAL: Using IOMMU type 1 (Type 1)
+EAL: Probe PCI driver: net_igc (8086:15f3) device: 0000:72:00.0 (socket -1)
+TELEMETRY: No legacy callbacks, legacy socket not created
+MTL: 2025-11-04 11:14:45, mtl_init, MTL version: 25.2.0.REL Thu Oct 23 09:32:53 2025 4e65bd2f gcc-11.4.0, dpdk version: DPDK 23.11.0
+MTL: 2025-11-04 11:14:45, mtl_init, MTL_HAS_USDT is defined for this build
+MTL: 2025-11-04 11:14:45, mt_dev_get_socket_id, direct soc_id from SOCKET_ID_ANY to 0 for 0000:72:00.0
+MTL: 2025-11-04 11:14:45, Warn: mt_instance_init, connect to manager fail, assume single instance mode
+MTL: 2025-11-04 11:14:45, mtl_init(0), socket_id 0 port 0000:72:00.0
+MTL: 2025-11-04 11:14:45, mt_stat_init, stat period 10s
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), use mt ptp source
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), user request queues tx 0 rx 3
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), deprecated sessions tx 0 rx 0
+MTL: 2025-11-04 11:14:45, dev_config_port(0), tx_q(1 with 512 desc) rx_q (4 with 2048 desc)
+MTL: 2025-11-04 11:14:45, stat_thread, start
+MTL: 2025-11-04 11:14:45, mt_mempool_create_by_ops(0), succ at 0x118020e240 size 4.310394m n 2047 d 2048 for T_P0_SYS_0
+MTL: 2025-11-04 11:14:45, dev_if_init_tx_queues(0), tx_queues 1 malloc succ
+MTL: 2025-11-04 11:14:45, mt_mempool_create_by_ops(0), succ at 0x118041da80 size 8.622894m n 4095 d 2048 for R_P0Q0_MBUF_1
+MTL: 2025-11-04 11:14:45, mt_mempool_create_by_ops(0), succ at 0x11814fdf00 size 8.622894m n 4095 d 2048 for R_P0Q1_MBUF_2
+MTL: 2025-11-04 11:14:45, mt_mempool_create_by_ops(0), succ at 0x11820fdf00 size 8.622894m n 4095 d 2048 for R_P0Q2_MBUF_3
+MTL: 2025-11-04 11:14:45, mt_mempool_create_by_ops(0), succ at 0x1182cfdf00 size 8.622894m n 4095 d 2048 for R_P0Q3_MBUF_4
+MTL: 2025-11-04 11:14:45, dev_if_init_rx_queues(0), rx_queues 4 malloc succ
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), port_id 0 port_type 2 drv_type 7
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), dev_capa 0x0, offload 0x20807f:0xb660f queue offload 0x0:0x1, rss : 0x38d34
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), system_rx_queues_end 1 hdr_split_rx_queues_end 1
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), sip: 192.168.50.58
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), netmask: 255.255.255.0
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), gateway: 0.0.0.0
+MTL: 2025-11-04 11:14:45, mt_dev_if_init(0), mac: 48:21:0b:57:51:25
+MTL: 2025-11-04 11:14:45, dev_start_port(0), rx_defer 0
+MTL: 2025-11-04 11:14:48, mt_eth_link_dump(0), link_speed 1g link_status 1 link_duplex 1 link_autoneg 1
+MTL: 2025-11-04 11:14:48, dev_if_init_pacing(0), use tsc as default
+MTL: 2025-11-04 11:14:48, mt_dev_create(0), feature 0x30, tx pacing tsc
+MTL: 2025-11-04 11:14:48, sch_lcore_shm_init, clear shm as we are the first user
+MTL: 2025-11-04 11:14:48, sch_lcore_shm_init, shared memory attached at 0x71be54164000 nattch 1 shm_id 9 key 0x15050005
+MTL: 2025-11-04 11:14:48, mt_sch_mrg_init, succ with data quota 31068 M
+MTL: 2025-11-04 11:14:48, sch_request(0), name sch_0 with 16 tasklets, type 0 socket 0
+MTL: 2025-11-04 11:14:48, mt_sch_add_quota(0:0), quota 0 total now 0
+MTL: 2025-11-04 11:14:48, mt_dev_get_tx_queue(0), q 0 without rl
+MTL: 2025-11-04 11:14:48, mt_mcast_init, report every 10 seconds
+MTL: 2025-11-04 11:14:48, mt_dev_get_rx_queue(0), q 0 ip 0.0.0.0 port 0
+MTL: 2025-11-04 11:14:48, cni_queues_init(0), rxq 0
+MTL: 2025-11-04 11:14:48, st_plugins_init, succ
+MTL: 2025-11-04 11:14:48, admin_thread, start
+MTL: 2025-11-04 11:14:48, cni_traffic_thread, start
+MTL: 2025-11-04 11:14:48, Warn: config_parse_json, open json file kahawai.json fail
+MTL: 2025-11-04 11:14:48, mt_ptp_port_id(0), port_number: 0000, clk_id: 48:21:0b:ff:fe:57:51:25
+MTL: 2025-11-04 11:14:48, mt_main_create, succ
+MTL: 2025-11-04 11:14:49, mt_calibrate_tsc, tscHz 2112022557
+MTL: 2025-11-04 11:14:49, mt_sch_get_lcore, succ on shm lcore 1 for lib_sch socket 0
+MTL: 2025-11-04 11:14:49, sch_tasklet_func(0), start with 0 tasklets, t_pid 3057
+MTL: 2025-11-04 11:14:49, sch_start(0), succ on lcore 1 socket 0
+MTL: 2025-11-04 11:14:49, mt_dev_start, succ
+MTL: 2025-11-04 11:14:49, _mt_start, succ, avail ports 1
+MTL: 2025-11-04 11:14:49, mtl_init, succ, tsc_hz 2112022557
+MTL: 2025-11-04 11:14:49, mtl_init, simd level avx2, flags 0x20000
+MTL initialized successfully
+Listening on: 192.168.50.58 (port 0000:72:00.0)
+Multicast group: 239.168.85.20, UDP port: 20000
+Video format: 1920x1080, FPS: 25
+Sessions: ST20P=1, ST30P=0
+Display: Enabled
+MTL: 2025-11-04 11:14:49, st20p_rx_create, start for st20p_rx_0
+MTL: 2025-11-04 11:14:49, st20_get_converter, plugin not found, input fmt: YUV422RFC4175PG2BE10, output fmt: YUV422PLANAR10LE
+MTL: 2025-11-04 11:14:49, rx_st20p_get_converter(0), use internal converter
+MTL: 2025-11-04 11:14:49, rx_st20p_init_dst_fbs(0), size 8294400 fmt 0 with 3 frames
+MTL: 2025-11-04 11:14:49, mt_sch_add_quota(0:0), quota 1080 total now 1080
+MTL: 2025-11-04 11:14:49, mt_sch_get_by_socket(0), succ with quota_mbs 1080 socket 0
+MTL: 2025-11-04 11:14:49, rvs_pkt_rx_tasklet_start(0), succ
+MTL: 2025-11-04 11:14:49, mtl_sch_register_tasklet(0), tasklet rvs_pkt_rx registered into slot 0
+MTL: 2025-11-04 11:14:49, rvs_mgr_init(0), succ
+MTL: 2025-11-04 11:14:49, rte_rx_flow_create(0), queue 1 succ, port 20000
+MTL: 2025-11-04 11:14:49, mt_dev_get_rx_queue(0), q 1 ip 239.168.85.20 port 20000
+MTL: 2025-11-04 11:14:49, rv_init_hw(0), port(l:0,p:0), queue 1 udp 20000
+MTL: 2025-11-04 11:14:49, mcast_membership_report_on_action(0), send join pkt, mb_report_len 16
+MTL: 2025-11-04 11:14:49, mt_mcast_join(0), join group 239.168.85.20
+MTL: 2025-11-04 11:14:49, rv_attach(0), 3 frames with size 5184000(810,0), type 0, progressive
+MTL: 2025-11-04 11:14:49, rv_attach(0), w 1920 h 1080 fmt ST20_FMT_YUV_422_10BIT packing 0 pt 112 flags 0x0 frame time 40.000000ms fps 25.000000
+MTL: 2025-11-04 11:14:49, mt_sch_add_quota(0:0), quota 540 total now 1620
+MTL: 2025-11-04 11:14:49, st20_rx_create_with_mask, succ on sch 0 session 0
+MTL: 2025-11-04 11:14:49, st20p_rx_create(0), transport fmt ST20_FMT_YUV_422_10BIT, output fmt YUV422PLANAR10LE, flags 0x8000
+ST20P RX session 0 created, frame size: 8294400 bytes
+XImage created: 1920x1080, depth=24, bpp=32, bytes_per_line=7680
+DEBUG: Test pattern mode enabled for 10 seconds
+X11 display initialized: 1920x1080, depth=24, session=0
+All RX sessions started successfully
+Press Ctrl+C to stop...
+Running indefinitely (press Ctrl+C to stop)...
+ST20P RX thread 0 started - waiting for incoming frames
+Main loop running... (exit=0, counter=100, signal handler active=yes)
+Main loop running... (exit=0, counter=200, signal handler active=yes)
+Main loop running... (exit=0, counter=300, signal handler active=yes)
+Main loop running... (exit=0, counter=400, signal handler active=yes)
+Main loop running... (exit=0, counter=500, signal handler active=yes)
+MTL: 2025-11-04 11:14:55, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:14:55, DEV(0): Avr rate, tx: 0.000096 Mb/s, rx: 0.000000 Mb/s, pkts, tx: 2, rx: 0
+MTL: 2025-11-04 11:14:55, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:14:55, CNI(0): eth_rx_rate 0.000000 Mb/s, eth_rx_cnt 0
+MTL: 2025-11-04 11:14:55, PTP(0): time 1762235095242036644, 2025-11-04 11:14:55
+MTL: 2025-11-04 11:14:55, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:14:55, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.109707
+MTL: 2025-11-04 11:14:55, RX_st20p(0,st20p_rx_0), p(0:free) c(0:free)
+MTL: 2025-11-04 11:14:55, RX_st20p(0), frame get try 6 succ 0, put 0
+MTL: 2025-11-04 11:14:55, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=600, signal handler active=yes)
+MTL: 2025-11-04 11:14:55, mt_mcast_parse(0), received igmp query, stop auto-join
+Main loop running... (exit=0, counter=700, signal handler active=yes)
+Main loop running... (exit=0, counter=800, signal handler active=yes)
+Main loop running... (exit=0, counter=900, signal handler active=yes)
+Main loop running... (exit=0, counter=1000, signal handler active=yes)
+Main loop running... (exit=0, counter=1100, signal handler active=yes)
+Main loop running... (exit=0, counter=1200, signal handler active=yes)
+Main loop running... (exit=0, counter=1300, signal handler active=yes)
+Main loop running... (exit=0, counter=1400, signal handler active=yes)
+ST20P RX session 0: Frame 1 received
+  Format: 0, Size: 8294400 bytes
+  Width: 1920, Height: 1080
+  Addresses: Y=0x1183a17000, U=0x1183e0b800, V=0x1184005c00
+  Linesizes: Y=3840, U=1920, V=1920
+ST20P RX session 0: Frame 2 received
+  Format: 0, Size: 8294400 bytes
+  Width: 1920, Height: 1080
+  Addresses: Y=0x1184217000, U=0x118460b800, V=0x1184805c00
+  Linesizes: Y=3840, U=1920, V=1920
+ST20P RX session 0: Frame 3 received
+  Format: 0, Size: 8294400 bytes
+  Width: 1920, Height: 1080
+  Addresses: Y=0x1184a17000, U=0x1184e0b800, V=0x1185005c00
+  Linesizes: Y=3840, U=1920, V=1920
+ST20P RX session 0: Frame 4 received
+  Format: 0, Size: 8294400 bytes
+  Width: 1920, Height: 1080
+  Addresses: Y=0x1183a17000, U=0x1183e0b800, V=0x1184005c00
+  Linesizes: Y=3840, U=1920, V=1920
+ST20P RX session 0: Frame 5 received
+  Format: 0, Size: 8294400 bytes
+  Width: 1920, Height: 1080
+  Addresses: Y=0x1184217000, U=0x118460b800, V=0x1184805c00
+  Linesizes: Y=3840, U=1920, V=1920
+Main loop running... (exit=0, counter=1500, signal handler active=yes)
+MTL: 2025-11-04 11:15:05, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:05, DEV(0): Avr rate, tx: 0.000096 Mb/s, rx: 80.413854 Mb/s, pkts, tx: 2, rx: 75963
+MTL: 2025-11-04 11:15:05, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:05, CNI(0): eth_rx_rate 0.000096 Mb/s, eth_rx_cnt 2
+MTL: 2025-11-04 11:15:05, PTP(0): time 1762235105241691488, 2025-11-04 11:15:05
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.900031 frames 9 pkts 38926
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): throughput 41.207613 Mb/s, cpu busy 0.109707
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): incomplete frames 1, pkts (idx error: 0, offset error: 0, idx out of bitmap: 0, missed: 2224)
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): dropped pkts 9 as no slot
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): redundant pkts 37026
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): slot get frame fail 9
+MTL: 2025-11-04 11:15:05, RX_VIDEO_SESSION(0,0): succ burst max 5, avg 1.001371
+MTL: 2025-11-04 11:15:05, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:05, RX_st20p(0), frame get try 15 succ 7, put 6
+MTL: 2025-11-04 11:15:05, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=1600, signal handler active=yes)
+Main loop running... (exit=0, counter=1700, signal handler active=yes)
+Main loop running... (exit=0, counter=1800, signal handler active=yes)
+Main loop running... (exit=0, counter=1900, signal handler active=yes)
+Main loop running... (exit=0, counter=2000, signal handler active=yes)
+Main loop running... (exit=0, counter=2100, signal handler active=yes)
+Main loop running... (exit=0, counter=2200, signal handler active=yes)
+Main loop running... (exit=0, counter=2300, signal handler active=yes)
+Main loop running... (exit=0, counter=2400, signal handler active=yes)
+Main loop running... (exit=0, counter=2500, signal handler active=yes)
+MTL: 2025-11-04 11:15:15, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:15, DEV(0): Avr rate, tx: 0.000048 Mb/s, rx: 726.333200 Mb/s, pkts, tx: 1, rx: 686109
+MTL: 2025-11-04 11:15:15, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:15, CNI(0): eth_rx_rate 0.000048 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:15:15, PTP(0): time 1762235115241654420, 2025-11-04 11:15:15
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0): redundant pkts 685994
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:15:15, RX_VIDEO_SESSION(0,0): succ burst max 3, avg 1.000537
+MTL: 2025-11-04 11:15:15, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:15, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:15:15, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=2600, signal handler active=yes)
+Main loop running... (exit=0, counter=2700, signal handler active=yes)
+Main loop running... (exit=0, counter=2800, signal handler active=yes)
+Main loop running... (exit=0, counter=2900, signal handler active=yes)
+Main loop running... (exit=0, counter=3000, signal handler active=yes)
+Main loop running... (exit=0, counter=3100, signal handler active=yes)
+Main loop running... (exit=0, counter=3200, signal handler active=yes)
+Main loop running... (exit=0, counter=3300, signal handler active=yes)
+Main loop running... (exit=0, counter=3400, signal handler active=yes)
+Main loop running... (exit=0, counter=3500, signal handler active=yes)
+MTL: 2025-11-04 11:15:25, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:25, DEV(0): Avr rate, tx: 0.000000 Mb/s, rx: 727.021706 Mb/s, pkts, tx: 0, rx: 686761
+MTL: 2025-11-04 11:15:25, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:25, CNI(0): eth_rx_rate 0.000000 Mb/s, eth_rx_cnt 0
+MTL: 2025-11-04 11:15:25, PTP(0): time 1762235125241663208, 2025-11-04 11:15:25
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0): redundant pkts 686639
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:15:25, RX_VIDEO_SESSION(0,0): succ burst max 4, avg 1.001011
+MTL: 2025-11-04 11:15:25, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:25, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:15:25, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=3600, signal handler active=yes)
+Main loop running... (exit=0, counter=3700, signal handler active=yes)
+Main loop running... (exit=0, counter=3800, signal handler active=yes)
+Main loop running... (exit=0, counter=3900, signal handler active=yes)
+Main loop running... (exit=0, counter=4000, signal handler active=yes)
+Main loop running... (exit=0, counter=4100, signal handler active=yes)
+Main loop running... (exit=0, counter=4200, signal handler active=yes)
+Main loop running... (exit=0, counter=4300, signal handler active=yes)
+Main loop running... (exit=0, counter=4400, signal handler active=yes)
+Main loop running... (exit=0, counter=4500, signal handler active=yes)
+MTL: 2025-11-04 11:15:35, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:35, DEV(0): Avr rate, tx: 0.000048 Mb/s, rx: 724.659573 Mb/s, pkts, tx: 1, rx: 684530
+MTL: 2025-11-04 11:15:35, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:35, CNI(0): eth_rx_rate 0.000048 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:15:35, PTP(0): time 1762235135241760348, 2025-11-04 11:15:35
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0): dropped pkts 166 as no slot
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0): redundant pkts 684367
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0): slot get frame fail 166
+MTL: 2025-11-04 11:15:35, RX_VIDEO_SESSION(0,0): succ burst max 4, avg 1.001212
+MTL: 2025-11-04 11:15:35, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:35, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:15:35, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=4600, signal handler active=yes)
+Main loop running... (exit=0, counter=4700, signal handler active=yes)
+Main loop running... (exit=0, counter=4800, signal handler active=yes)
+Main loop running... (exit=0, counter=4900, signal handler active=yes)
+Main loop running... (exit=0, counter=5000, signal handler active=yes)
+Main loop running... (exit=0, counter=5100, signal handler active=yes)
+Main loop running... (exit=0, counter=5200, signal handler active=yes)
+Main loop running... (exit=0, counter=5300, signal handler active=yes)
+Main loop running... (exit=0, counter=5400, signal handler active=yes)
+MTL: 2025-11-04 11:15:45, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:45, DEV(0): Avr rate, tx: 0.000000 Mb/s, rx: 726.353363 Mb/s, pkts, tx: 0, rx: 686127
+MTL: 2025-11-04 11:15:45, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:45, CNI(0): eth_rx_rate 0.000094 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:15:45, PTP(0): time 1762235145241707210, 2025-11-04 11:15:45
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0): redundant pkts 686014
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:15:45, RX_VIDEO_SESSION(0,0): succ burst max 7, avg 1.001223
+MTL: 2025-11-04 11:15:45, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:45, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:15:45, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=5500, signal handler active=yes)
+Main loop running... (exit=0, counter=5600, signal handler active=yes)
+Main loop running... (exit=0, counter=5700, signal handler active=yes)
+Main loop running... (exit=0, counter=5800, signal handler active=yes)
+Main loop running... (exit=0, counter=5900, signal handler active=yes)
+Main loop running... (exit=0, counter=6000, signal handler active=yes)
+Main loop running... (exit=0, counter=6100, signal handler active=yes)
+Main loop running... (exit=0, counter=6200, signal handler active=yes)
+Main loop running... (exit=0, counter=6300, signal handler active=yes)
+Main loop running... (exit=0, counter=6400, signal handler active=yes)
+MTL: 2025-11-04 11:15:55, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:15:55, DEV(0): Avr rate, tx: 0.000048 Mb/s, rx: 727.024930 Mb/s, pkts, tx: 1, rx: 686764
+MTL: 2025-11-04 11:15:55, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:15:55, CNI(0): eth_rx_rate 0.000048 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:15:55, PTP(0): time 1762235155241736117, 2025-11-04 11:15:55
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0): redundant pkts 686642
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:15:55, RX_VIDEO_SESSION(0,0): succ burst max 5, avg 1.001293
+MTL: 2025-11-04 11:15:55, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:15:55, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:15:55, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=6500, signal handler active=yes)
+Main loop running... (exit=0, counter=6600, signal handler active=yes)
+Main loop running... (exit=0, counter=6700, signal handler active=yes)
+Main loop running... (exit=0, counter=6800, signal handler active=yes)
+Main loop running... (exit=0, counter=6900, signal handler active=yes)
+Main loop running... (exit=0, counter=7000, signal handler active=yes)
+Main loop running... (exit=0, counter=7100, signal handler active=yes)
+Main loop running... (exit=0, counter=7200, signal handler active=yes)
+Main loop running... (exit=0, counter=7300, signal handler active=yes)
+Main loop running... (exit=0, counter=7400, signal handler active=yes)
+MTL: 2025-11-04 11:16:05, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:16:05, DEV(0): Avr rate, tx: 0.000000 Mb/s, rx: 724.635171 Mb/s, pkts, tx: 0, rx: 684506
+MTL: 2025-11-04 11:16:05, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:16:05, CNI(0): eth_rx_rate 0.000000 Mb/s, eth_rx_cnt 0
+MTL: 2025-11-04 11:16:05, PTP(0): time 1762235165241781706, 2025-11-04 11:16:05
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0): dropped pkts 166 as no slot
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0): redundant pkts 684344
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0): slot get frame fail 166
+MTL: 2025-11-04 11:16:05, RX_VIDEO_SESSION(0,0): succ burst max 4, avg 1.000955
+MTL: 2025-11-04 11:16:05, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:16:05, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:16:05, * *    E N D    S T A T E   * * 
+
+Main loop running... (exit=0, counter=7500, signal handler active=yes)
+Main loop running... (exit=0, counter=7600, signal handler active=yes)
+Main loop running... (exit=0, counter=7700, signal handler active=yes)
+Main loop running... (exit=0, counter=7800, signal handler active=yes)
+Main loop running... (exit=0, counter=7900, signal handler active=yes)
+Main loop running... (exit=0, counter=8000, signal handler active=yes)
+Main loop running... (exit=0, counter=8100, signal handler active=yes)
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+Exit flag detected, breaking main loop
+Stopping application...
+MTL: 2025-11-04 11:16:15, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:16:15, DEV(0): Avr rate, tx: 0.000048 Mb/s, rx: 726.373432 Mb/s, pkts, tx: 1, rx: 686150
+MTL: 2025-11-04 11:16:15, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:16:15, CNI(0): eth_rx_rate 0.000048 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:16:15, PTP(0): time 1762235175241748623, 2025-11-04 11:16:15
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.117878
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0): redundant pkts 686034
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:16:15, RX_VIDEO_SESSION(0,0): succ burst max 4, avg 1.001895
+MTL: 2025-11-04 11:16:15, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:16:15, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:16:15, * *    E N D    S T A T E   * * 
+
+MTL: 2025-11-04 11:16:25, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:16:25, DEV(0): Avr rate, tx: 0.000000 Mb/s, rx: 727.022771 Mb/s, pkts, tx: 0, rx: 686761
+MTL: 2025-11-04 11:16:25, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:16:25, CNI(0): eth_rx_rate 0.000000 Mb/s, eth_rx_cnt 0
+MTL: 2025-11-04 11:16:25, PTP(0): time 1762235185241737705, 2025-11-04 11:16:25
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0): dropped pkts 167 as no slot
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0): redundant pkts 686638
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0): slot get frame fail 167
+MTL: 2025-11-04 11:16:25, RX_VIDEO_SESSION(0,0): succ burst max 3, avg 1.000473
+MTL: 2025-11-04 11:16:25, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:16:25, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:16:25, * *    E N D    S T A T E   * * 
+
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+^C
+=== SIGNAL RECEIVED ===
+Signal: 2 (SIGINT(Ctrl+C))
+Global context: 0x7ffcb457e1a0
+Setting exit flag to true
+Exit flag set: 1
+========================
+MTL: 2025-11-04 11:16:35, * *    M T    D E V   S T A T E   * * 
+MTL: 2025-11-04 11:16:35, DEV(0): Avr rate, tx: 0.000048 Mb/s, rx: 724.617213 Mb/s, pkts, tx: 1, rx: 684491
+MTL: 2025-11-04 11:16:35, SCH(0:sch_0): tasklets 1, lcore 1(t_pid: 3057), avg loop 32 ns
+MTL: 2025-11-04 11:16:35, CNI(0): eth_rx_rate 0.000048 Mb/s, eth_rx_cnt 1
+MTL: 2025-11-04 11:16:35, PTP(0): time 1762235195241820701, 2025-11-04 11:16:35
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0:st20p_rx_0): fps 0.000000 frames 0 pkts 0
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0): throughput 0.000000 Mb/s, cpu busy 0.114306
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0): dropped pkts 166 as no slot
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0): redundant pkts 684328
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0): slot get frame fail 166
+MTL: 2025-11-04 11:16:35, RX_VIDEO_SESSION(0,0): succ burst max 3, avg 1.000936
+MTL: 2025-11-04 11:16:35, RX_st20p(0,st20p_rx_0), p(0:in_user) c(1:ready)
+MTL: 2025-11-04 11:16:35, RX_st20p(0), frame get try 0 succ 0, put 0
+MTL: 2025-11-04 11:16:35, * *    E N D    S T A T E   * * 
+
+^Z
+[1]+  Stopped                 ./build/RxApp-X11 --sip 192.168.50.58 --port 0000:72:00.0 --display
