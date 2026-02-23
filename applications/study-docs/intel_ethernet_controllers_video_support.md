@@ -396,11 +396,24 @@ def calculate_max_streams(link_speed_gbps, resolution, fps, compression_ratio=1,
 - **I225-LM/V** (2.5G)
 - **I226-LM/V** (2.5G with TSN)
 
+**Uncompressed Format Support:**
+- ✅ 1080p60 YUV 4:2:0 8-bit (1 stream, 1.79 Gbps)
+- ✅ 1080p60 YUV 4:2:0 10-bit (1 stream, 2.24 Gbps) - **HDR capable**
+- ✅ 1080p60 YUV 4:2:2 8-bit (1 stream, 2.39 Gbps)
+- ✅ 1080p30 YUV 4:2:2 10-bit (1 stream, 1.50 Gbps) - **ST2110 standard at 30fps**
+- ✅ 1080p30 YUV 4:4:4 10-bit (1 stream, 2.24 Gbps) - Full chroma
+- ✅ 1080p30 RGB 10-bit (1 stream, 2.24 Gbps) - Graphics workflows
+- ❌ 1080p60 YUV 4:2:2 10-bit (2.98 Gbps exceeds 2.5G) - **Requires 10G**
+
 **Use Cases:**
-- Compressed video only (ST2110-22)
-- Low-bandwidth monitoring/preview streams
-- Audio-only transport (ST2110-30)
+- **Uncompressed:** Budget-friendly 1080p workflows with YUV 4:2:0 (HDR compatible)
+- **Uncompressed:** Lower frame rate production (≤30fps) with ST2110 standard format
+- **Compressed:** Multiple streams with JPEGXS compression (ST2110-22)
+- **Compressed:** Low-bandwidth monitoring/preview streams
+- Audio transport (ST2110-30)
 - Control/management traffic
+
+**Key Advantage:** I226-V includes TSN (Time-Sensitive Networking) for precise timing
 
 ---
 
@@ -1131,25 +1144,52 @@ The tables below show bandwidth requirements for different YUV and RGB formats a
 
 ## Recommended Configurations
 
-### Configuration 1: Entry-Level Compressed Workflows (2.5G)
+### Configuration 1: Entry-Level - Limited Uncompressed + Compressed (2.5G)
 
-**Hardware:** Intel I225/I226-V  
+**Hardware:** Intel I225-V or I226-V (with TSN)  
 **Link Speed:** 2.5 Gbps  
-**Use Case:** Compressed video monitoring, preview, and distribution
+**Use Case:** Select uncompressed formats at 1080p, compressed workflows, and monitoring
 
-**Supported Streams:**
-- ✅ 8× 1080p60 compressed (JPEGXS 10:1)
-- ✅ 4× 4K30 compressed (JPEGXS 10:1)
-- ✅ 2× 4K60 compressed (JPEGXS 10:1)
+**Supported Uncompressed Streams:**
+
+**@ 1080p60:**
+- ✅ 1× YUV 4:2:0 8-bit (1.79 Gbps) - Bandwidth-efficient
+- ✅ 1× YUV 4:2:0 10-bit (2.24 Gbps) - HDR support
+- ✅ 1× YUV 4:2:2 8-bit (2.39 Gbps) - Near capacity
+- ❌ 0× YUV 4:2:2 10-bit (2.98 Gbps) - **Exceeds 2.5G, requires 10G**
+
+**@ 1080p30:**
+- ✅ 2× YUV 4:2:0 8-bit (0.90 Gbps each)
+- ✅ 2× YUV 4:2:0 10-bit (1.12 Gbps each) - HDR capable
+- ✅ 2× YUV 4:2:2 8-bit (1.20 Gbps each)
+- ✅ 1× YUV 4:2:2 10-bit (1.50 Gbps) - **ST2110 standard**
+- ✅ 1× YUV 4:2:2 12-bit (1.79 Gbps) - Premium quality
+- ✅ 1× YUV 4:4:4 8-bit (1.79 Gbps) - Full color
+- ✅ 1× YUV 4:4:4 10-bit (2.24 Gbps) - High-end
+- ✅ 1× RGB 8-bit (1.79 Gbps) - Graphics
+- ✅ 1× RGB 10-bit (2.24 Gbps) - CGI workflows
+
+**Supported Compressed Streams (JPEGXS 10:1):**
+- ✅ 16× 1080p30 compressed
+- ✅ 8× 1080p60 compressed
+- ✅ 4× 4K30 compressed
+- ✅ 2× 4K60 compressed
 - ✅ Multiple ST2110-30 audio streams
 
 **Best For:**
-- Content distribution networks
-- Monitor/preview feeds
-- Editing workstations (proxy workflows)
-- Remote production contribution feeds
+- **Uncompressed:** YUV 4:2:0 workflows at 1080p (bandwidth-efficient HDR)
+- **Uncompressed:** 1080p30 with YUV 4:2:2 10-bit standard format (1 stream)
+- **Uncompressed:** Lower frame rate production (24/25/30 fps) with standard formats
+- **Compressed:** Content distribution networks and monitoring
+- **Compressed:** Editing workstations (proxy workflows)
+- **Compressed:** Remote production contribution feeds
 
-**Compression Required:** Yes (10:1 or higher)
+**Key Limitation:** Cannot support YUV 4:2:2 10-bit (ST2110 standard) @ 1080p60 uncompressed
+
+**Recommended Format Selection:**
+- Use **YUV 4:2:0 10-bit** for HDR 1080p60 within 2.5G bandwidth
+- Use **YUV 4:2:2 10-bit** for ST2110 standard compliance at ≤30fps
+- Use **Compressed (JPEGXS 10:1)** for higher resolutions or frame rates
 
 ---
 
@@ -1383,10 +1423,13 @@ filter.queue = 0;
 ```
 1. What is your video format?
    ├─ Uncompressed (ST2110-20) ──→ Go to Q2
-   └─ Compressed (ST2110-22) ──→ Consider 2.5G-10G NICs
+   └─ Compressed (ST2110-22) ──→ Consider 2.5G-10G NICs (all resolutions supported)
 
-2. What is your maximum resolution?
-   ├─ 1080p/1080i ────────────→ 10G sufficient (X710)
+2. What is your maximum resolution and frame rate?
+   ├─ 1080p60 YUV 4:2:0 10-bit (HDR) ──→ 2.5G sufficient (I225/I226) ✅ Budget option
+   ├─ 1080p30 YUV 4:2:2 10-bit ★ ──→ 2.5G sufficient (I225/I226) ✅ Budget option
+   ├─ 1080p60 YUV 4:2:2 10-bit ★ ──→ 10G minimum (X710) - Standard format
+   ├─ 1080p/1080i (all formats) ──→ 10G sufficient (X710)
    ├─ 4K @ 30fps ─────────────→ 10G minimum (X710), 25G recommended (XXV710/E810)
    ├─ 4K @ 60fps ─────────────→ 25G minimum (XXV710/E810)
    ├─ 4K @ 120fps ────────────→ 40G minimum (XL710), 50G recommended (E810)
@@ -1394,16 +1437,23 @@ filter.queue = 0;
    ├─ 8K @ 60fps ─────────────→ 50G minimum (E810)
    └─ 8K @ 120fps ────────────→ 100G required (E810)
 
+★ = ST2110-20 standard format (YUV 4:2:2 10-bit)
+
 3. How many concurrent streams?
-   ├─ 1-3 streams ─────────────→ Match bandwidth to single stream
+   ├─ 1 stream (budget) ───────→ Match format to bandwidth:
+   │                              • 1080p60 4:2:0: 2.5G NIC ✅
+   │                              • 1080p30 4:2:2 ★: 2.5G NIC ✅
+   │                              • 1080p60 4:2:2 ★: 10G NIC minimum
+   ├─ 1-3 streams ─────────────→ Match bandwidth to total streams
    ├─ 4-10 streams ────────────→ Add 50% overhead for port capacity
    └─ 10+ streams ─────────────→ Consider higher speed or multiple ports
 
 4. Do you need advanced features?
    ├─ PTP synchronization ─────→ All Intel NICs support PTP
+   ├─ TSN timing (budget) ─────→ I226-V (2.5G with TSN)
    ├─ ST2110 DDP profile ──────→ E810 series required
    ├─ Lowest latency ──────────→ E810 series (sub-microsecond)
-   └─ Cost-sensitive ──────────→ X710/XXV710 for proven performance
+   └─ Cost-sensitive ──────────→ I225/I226 (2.5G) or X710/XXV710 for proven performance
 ```
 
 ---
@@ -1457,27 +1507,49 @@ filter.queue = 0;
 
 ---
 
-#### Monitoring/Distribution
+#### Monitoring/Distribution & Budget Uncompressed
 
-**Recommended:** Intel I226-V (2.5G with TSN)  
+**Recommended:** Intel I226-V (2.5G with TSN) or I225-V  
 **Why:**
-- Low cost per endpoint
-- Sufficient for compressed streams
-- TSN support for timing
-- Low power consumption
+- Low cost per endpoint ($30-50)
+- **Uncompressed:** Supports YUV 4:2:0 8/10-bit @ 1080p60 (1 stream)
+- **Uncompressed:** Supports YUV 4:2:2 10-bit @ 1080p30 (ST2110 standard, 1 stream)
+- **Compressed:** Sufficient for multiple compressed streams
+- I226-V adds TSN support for precise timing
+- Low power consumption (1-2W typical)
+
+**Uncompressed Capabilities:**
+- 1080p60 YUV 4:2:0 10-bit (HDR, 1 stream)
+- 1080p30 YUV 4:2:2 10-bit (Standard, 1 stream)
+- 1080p30 YUV 4:4:4 10-bit (Full color, 1 stream)
+
+**Compressed Capabilities:**
+- 8× 1080p60 (JPEGXS 10:1)
+- 2× 4K60 (JPEGXS 10:1)
 
 ---
 
 ### Budget Considerations
 
-| Budget Level | Resolution Target | Recommended Controller | Approx. Price |
-|-------------|------------------|------------------------|---------------|
-| **Entry** | 1080p compressed | I225-V | $30-50 |
-| **Standard** | 1080p uncompressed | X710-DA2 | $300-500 |
-| **Professional** | 4K30/4K60 | XXV710-DA2 | $600-900 |
-| **High-End** | 4K60+ / Multi-stream | E810-XXVDA2/4 | $1000-1500 |
-| **Premium** | 8K / Ultra-density | E810-CQDA2 | $2000-3000 |
-| **Enterprise** | Maximum capacity | E810-2CQDA2 | $3000-4000 |
+| Budget Level | Resolution Target | Format Support | Recommended Controller | Approx. Price |
+|-------------|------------------|----------------|------------------------|---------------|
+| **Entry** | 1080p60 uncompressed | YUV 4:2:0 8/10-bit (1 stream) | I225-V | $30-50 |
+| **Entry** | 1080p30 uncompressed | YUV 4:2:2 10-bit ★ (1 stream) | I225-V | $30-50 |
+| **Entry** | 1080p60 compressed | All formats (8+ streams) | I225-V | $30-50 |
+| **Standard** | 1080p60 uncompressed | YUV 4:2:2 10-bit ★ (3 streams) | X710-DA2 | $300-500 |
+| **Professional** | 4K30/4K60 | YUV 4:2:2 10-bit ★ | XXV710-DA2 | $600-900 |
+| **High-End** | 4K60+ / Multi-stream | YUV 4:2:2 10-bit ★ + 4:4:4 | E810-XXVDA2/4 | $1000-1500 |
+| **Premium** | 8K / Ultra-density | All formats | E810-CQDA2 | $2000-3000 |
+| **Enterprise** | Maximum capacity | All formats | E810-2CQDA2 | $3000-4000 |
+
+★ = ST2110-20 standard format (YUV 4:2:2 10-bit)
+
+**2.5G NIC Format Guide:**
+- **YUV 4:2:0 8-bit @ 1080p60:** Best bandwidth efficiency (1.79 Gbps)
+- **YUV 4:2:0 10-bit @ 1080p60:** HDR support within 2.5G (2.24 Gbps)
+- **YUV 4:2:2 8-bit @ 1080p60:** Near-limit operation (2.39 Gbps, 96% utilization)
+- **YUV 4:2:2 10-bit @ 1080p30:** ST2110 standard compliance (1.50 Gbps)
+- **YUV 4:4:4 10-bit @ 1080p30:** Full chroma for post-production (2.24 Gbps)
 
 ---
 
@@ -1519,6 +1591,9 @@ numactl --cpunodebind=0 --membind=0 ./my_mtl_app
 **Recommended Settings:**
 
 ```bash
+# For 2.5G workloads (light uncompressed or compressed streams)
+echo 1024 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+
 # For 10G workloads
 echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
 
@@ -1678,26 +1753,48 @@ ethtool -S eth0 | grep -i error
 
 ### Quick Selection Guide Summary
 
-| Your Primary Need | Recommended Controller | Link Speed |
-|------------------|------------------------|------------|
-| Compressed video only (preview/monitoring) | Intel I225/I226-V | 2.5G |
-| HD uncompressed (1080p) | Intel X710-DA2 | 10G |
-| 4K30 uncompressed | Intel X710/XXV710 | 10G-25G |
-| **4K60 uncompressed (most common)** | **Intel E810-XXVDA2** | **25G** |
-| 4K120 / Multi-4K60 | Intel E810-CQDA2 | 50G-100G |
-| 8K30/8K60 production | Intel E810-CQDA2 | 50G-100G |
-| Maximum density / Future-proof | Intel E810-2CQDA2 | 100G |
+| Your Primary Need | Format Details | Recommended Controller | Link Speed |
+|------------------|----------------|------------------------|------------|
+| **1080p60 uncompressed (budget)** | **YUV 4:2:0 10-bit (HDR)** | **Intel I225/I226-V** | **2.5G** |
+| **1080p30 uncompressed (budget)** | **YUV 4:2:2 10-bit ★ (standard)** | **Intel I225/I226-V** | **2.5G** |
+| Compressed video (all resolutions) | All formats with JPEGXS | Intel I225/I226-V | 2.5G |
+| **1080p60 uncompressed (standard)** | **YUV 4:2:2 10-bit ★** | **Intel X710-DA2** | **10G** |
+| 4K30 uncompressed | YUV 4:2:2 10-bit ★ | Intel X710/XXV710 | 10G-25G |
+| **4K60 uncompressed (most common)** | **YUV 4:2:2 10-bit ★** | **Intel E810-XXVDA2** | **25G** |
+| 4K60 high-end formats | YUV 4:4:4 10-bit, RGB 10-bit | Intel E810-XXVDA2 | 25G |
+| 4K120 / Multi-4K60 | YUV 4:2:2 10-bit ★ | Intel E810-CQDA2 | 50G-100G |
+| 8K30/8K60 production | YUV 4:2:2 10-bit ★ | Intel E810-CQDA2 | 50G-100G |
+| 8K high-end formats | YUV 4:4:4, RGB (limited) | Intel E810-CQDA2 | 100G |
+| Maximum density / Future-proof | All formats | Intel E810-2CQDA2 | 100G |
+
+★ = ST2110-20 standard format (YUV 4:2:2 10-bit = 20 bits per pixel)
 
 ---
 
 ### Key Takeaways
 
-1. **10G is sufficient for HD (1080p)** but not 4K60 uncompressed
-2. **25G is the sweet spot for 4K60** uncompressed production
-3. **100G is required for 8K60+** or ultra-high stream density
-4. **Compression changes everything:** 2.5G can handle 4K60 with JPEGXS 10:1
-5. **E810 series is recommended** for new deployments due to DDP and latest features
-6. **Always plan for 70-80% link utilization** to allow for overhead and jitter
+1. **2.5G has limited uncompressed support:**
+   - ✅ 1080p60 YUV 4:2:0 10-bit (HDR, 1 stream)
+   - ✅ 1080p30 YUV 4:2:2 10-bit (ST2110 standard, 1 stream)
+   - ❌ 1080p60 YUV 4:2:2 10-bit (2.98 Gbps exceeds 2.5G)
+   - 💡 Use YUV 4:2:0 10-bit for HDR 1080p60 within 2.5G budget
+
+2. **10G is sufficient for HD (1080p) standard format** (YUV 4:2:2 10-bit, 3 streams) but not 4K60 uncompressed
+
+3. **25G is the sweet spot for 4K60** uncompressed production (YUV 4:2:2 10-bit, 2 streams)
+
+4. **100G is required for 8K60+** or ultra-high stream density
+
+5. **Compression changes everything:** 2.5G can handle 4K60 with JPEGXS 10:1 (2 streams)
+
+6. **Format selection impacts bandwidth:**
+   - YUV 4:2:0 saves ~40% vs 4:2:2 (lower chroma quality)
+   - 8-bit saves ~20% vs 10-bit (less color depth)
+   - YUV 4:4:4 uses ~50% more than 4:2:2 (full chroma)
+
+7. **E810 series is recommended** for new deployments due to DDP and latest features
+
+8. **Always plan for 70-80% link utilization** to allow for overhead and jitter
 
 ---
 
