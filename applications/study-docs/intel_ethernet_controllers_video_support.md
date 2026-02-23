@@ -396,20 +396,25 @@ def calculate_max_streams(link_speed_gbps, resolution, fps, compression_ratio=1,
 - **I225-LM/V** (2.5G)
 - **I226-LM/V** (2.5G with TSN)
 
-**Uncompressed Format Support:**
-- ✅ 1080p60 YUV 4:2:0 8-bit (1 stream, 1.79 Gbps)
-- ✅ 1080p60 YUV 4:2:0 10-bit (1 stream, 2.24 Gbps) - **HDR capable**
-- ✅ 1080p60 YUV 4:2:2 8-bit (1 stream, 2.39 Gbps)
-- ✅ 1080p30 YUV 4:2:2 10-bit (1 stream, 1.50 Gbps) - **ST2110 standard at 30fps**
-- ✅ 1080p30 YUV 4:4:4 10-bit (1 stream, 2.24 Gbps) - Full chroma
-- ✅ 1080p30 RGB 10-bit (1 stream, 2.24 Gbps) - Graphics workflows
-- ❌ 1080p60 YUV 4:2:2 10-bit (2.98 Gbps exceeds 2.5G) - **Requires 10G**
+**Uncompressed Format Support (≤30fps only):**
+- ✅ 1080p30 YUV 4:2:0 8-bit (1 stream, 0.90 Gbps) - Bandwidth efficient
+- ✅ 1080p30 YUV 4:2:0 10-bit (1 stream, 1.12 Gbps) - **HDR capable**
+- ✅ 1080p30 YUV 4:2:0 12-bit (1 stream, 1.34 Gbps) - High quality
+- ✅ 1080p30 YUV 4:2:2 8-bit (1 stream, 1.20 Gbps) - Good quality
+- ✅ 1080p30 YUV 4:2:2 10-bit (1 stream, 1.50 Gbps) - **ST2110 standard**
+- ✅ 1080p30 YUV 4:2:2 12-bit (1 stream, 1.79 Gbps) - Premium quality
+- ✅ 1080p30 YUV 4:4:4 8-bit (1 stream, 1.79 Gbps) - Full chroma
+- ✅ 1080p30 YUV 4:4:4 10-bit (1 stream, 2.24 Gbps) - High-end
+- ✅ 1080p30 RGB 8-bit (1 stream, 1.79 Gbps) - Graphics
+- ✅ 1080p30 RGB 10-bit (1 stream, 2.24 Gbps) - CGI workflows
+- ❌ 1080p60 and above - **Requires 10G or compression**
 
 **Use Cases:**
-- **Uncompressed:** Budget-friendly 1080p workflows with YUV 4:2:0 (HDR compatible)
-- **Uncompressed:** Lower frame rate production (≤30fps) with ST2110 standard format
-- **Compressed:** Multiple streams with JPEGXS compression (ST2110-22)
-- **Compressed:** Low-bandwidth monitoring/preview streams
+- **Uncompressed:** Budget-friendly 1080p ≤30fps workflows (all formats supported)
+- **Uncompressed:** ST2110 standard at 30fps (YUV 4:2:2 10-bit)
+- **Compressed:** 60fps+ via JPEGXS compression (ST2110-22)
+- **Compressed:** Multiple compressed 60fps streams possible
+- **Segmented:** Multiple smaller segments at higher frame rates (see segmentation guide)
 - Audio transport (ST2110-30)
 - Control/management traffic
 
@@ -426,8 +431,8 @@ def calculate_max_streams(link_speed_gbps, resolution, fps, compression_ratio=1,
 | **1080p** (1920×1080) | 23.98 fps | 1.20 | **I225/I226 (2.5G), All 10G+** | SD-SDI equivalent |
 | 1080p | 25 fps | 1.25 | **I225/I226 (2.5G), All 10G+** | PAL standard |
 | 1080p | 29.97 fps | 1.50 | **I225/I226 (2.5G), All 10G+** | NTSC standard |
-| 1080p | 30 fps | 1.50 | **I225/I226 (2.5G), All 10G+** | |
-| 1080p | 50 fps | 2.49 | **I225/I226 (2.5G - at limit), All 10G+** | HD-SDI equivalent |
+| **1080p** | **30 fps** | **1.50** | **I225/I226 (2.5G), All 10G+** | **Max for 2.5G uncompressed** |
+| 1080p | 50 fps | 2.49 | X710, XXV710, XL710, E810 (10G+ only) | HD-SDI equivalent |
 | 1080p | 59.94 fps | 2.97 | X710, XXV710, XL710, E810 (10G+ only) | Common broadcast |
 | **1080p** | **60 fps** | **2.98** | **X710, XXV710, XL710, E810 (10G+ only)** | **Common production** |
 | **1080i** (interlaced) | 50i | 1.24 | **I225/I226 (2.5G), All 10G+** | HD-SDI broadcast |
@@ -625,11 +630,12 @@ The tables below show bandwidth requirements for different YUV and RGB formats a
 4. **YUV 4:4:4 10-bit:** VFX, color grading, high-end post-production
 5. **RGB 10-bit:** Computer graphics, gaming, CGI workflows
 
-**2.5G NIC Compatibility:**
-- ✅ YUV 4:2:0 formats: All 1080p rates, some 4K rates with 8-bit
-- ✅ YUV 4:2:2 8-bit: 1080p up to 60fps
+**2.5G NIC Compatibility (Uncompressed):**
+- ✅ All YUV formats: 1080p up to 30fps
+- ✅ RGB 8-bit/10-bit: 1080p up to 30fps
 - ✅ YUV 4:2:2 10-bit: 1080p ≤30fps (ST2110 standard)
-- ❌ YUV 4:4:4 and RGB 10-bit+: Require 10G+ for most resolutions
+- ❌ 1080p 50fps/60fps: Requires 10G+ or compression
+- ❌ 4K uncompressed: Requires 10G+ or compression
 
 ---
 
@@ -641,27 +647,12 @@ The tables below show bandwidth requirements for different YUV and RGB formats a
 
 **Standard Uncompressed (YUV 4:2:2 10-bit - ST2110-20):**
 
-| Controller | Link Speed | 1080p24 | 1080p25 | 1080p30 | 1080p50 | 1080p60 |
-|------------|-----------|---------|---------|---------|---------|---------|
-| I225-V | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | ⚠️ 1 (at limit) | ❌ |
-| I226-V (TSN) | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | ⚠️ 1 (at limit) | ❌ |
+| Controller | Link Speed | 1080p24 | 1080p25 | 1080p30 | Notes |
+|------------|-----------|---------|---------|---------|-------|
+| I225-V | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | 30fps max uncompressed |
+| I226-V (TSN) | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | 30fps max uncompressed |
 
-**Maximum Streams by Format @ 1080p60 (2.5G NIC):**
-
-| Format | Bit Depth | Bandwidth | Max Streams | Notes |
-|--------|-----------|-----------|-------------|-------|
-| **YUV 4:2:0** | 8-bit | 1.79 Gbps | ✅ **1** | Bandwidth-efficient |
-| YUV 4:2:0 | 10-bit | 2.24 Gbps | ✅ **1** | HDR support |
-| YUV 4:2:0 | 12-bit | 2.69 Gbps | ❌ **0** | Exceeds capacity |
-| **YUV 4:2:2** | 8-bit | 2.39 Gbps | ✅ **1** | Near capacity limit |
-| **YUV 4:2:2** ★ | **10-bit** | **2.98 Gbps** | **❌ 0** | **ST2110 standard - requires 10G** |
-| YUV 4:2:2 | 12-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
-| **YUV 4:4:4** | 8-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
-| YUV 4:4:4 | 10-bit | 4.48 Gbps | ❌ **0** | Requires 10G |
-| YUV 4:4:4 | 12-bit | 5.37 Gbps | ❌ **0** | Requires 10G |
-| **RGB** | 8-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
-| RGB | 10-bit | 4.48 Gbps | ❌ **0** | Requires 10G |
-| RGB | 12-bit | 5.37 Gbps | ❌ **0** | Requires 10G |
+**Note:** 2.5G NICs support uncompressed formats up to 30fps only. For 50fps/60fps, use compression (ST2110-22) or upgrade to 10G+ NICs.
 
 **Maximum Streams by Format @ 1080p30 (2.5G NIC):**
 

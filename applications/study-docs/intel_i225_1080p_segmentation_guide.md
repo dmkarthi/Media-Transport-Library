@@ -1,205 +1,219 @@
-# Intel I225 2.5GbE: 1080p Video Segmentation for Uncompressed Transport
+# Intel I225 2.5GbE: LED Video Wall Segmentation Guide
 
 **Date:** February 23, 2026  
 **Repository:** OpenVisualCloud/Media-Transport-Library  
-**Purpose:** Guide for transmitting multiple segmented 1080p uncompressed video streams over a single 2.5G NIC using multi-stream architecture
+**Purpose:** Guide for driving LED video walls with segmented 1080p uncompressed video streams over a single 2.5G NIC, using vertical and horizontal panel arrangements
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Segmentation Strategies](#segmentation-strategies)
-3. [Bandwidth Calculations by Segment Size](#bandwidth-calculations-by-segment-size)
-4. [Format and Bit Depth Support](#format-and-bit-depth-support)
-5. [Maximum Frame Rates by Configuration](#maximum-frame-rates-by-configuration)
-6. [Practical Use Cases](#practical-use-cases)
+2. [Single-NIC Multi-Stream Architecture](#single-nic-multi-stream-architecture)
+3. [LED Panel Segmentation Strategies](#led-panel-segmentation-strategies)
+4. [Bandwidth Calculations for LED Panels](#bandwidth-calculations-for-led-panels)
+5. [LED Panel Format and Color Support](#led-panel-format-and-color-support)
+6. [Practical LED Video Wall Use Cases](#practical-led-video-wall-use-cases)
 7. [Implementation Considerations](#implementation-considerations)
 8. [Quick Reference Tables](#quick-reference-tables)
+9. [Python Bandwidth Calculator](#python-bandwidth-calculator)
+10. [Conclusion](#conclusion)
 
 ---
 
 ## Overview
 
-### The Challenge
+### The Challenge: LED Video Walls with Budget Hardware
 
-A full 1080p frame (1920×1080) using the ST2110-20 standard format (YUV 4:2:2 10-bit) requires:
-- **@ 60fps:** 2.98 Gbps (exceeds 2.5G capacity)
-- **@ 30fps:** 1.50 Gbps (fits within 2.5G)
+LED video walls typically require multiple video outputs or expensive 10G infrastructure. A full 1080p frame using ST2110-20 standard format (YUV 4:2:2 10-bit) requires:
+- **@ 30fps:** 1.50 Gbps (fits within 2.5G for single panel)
+- **@ 24fps:** 1.20 Gbps (fits within 2.5G for single panel)
+- **Multiple panels:** Traditionally require multiple NICs or 10G infrastructure
 
-### The Solution: Frame Segmentation with Multi-Stream Transmission
+### The Solution: LED Panel Segmentation with Single-NIC Multi-Stream
 
-By dividing the 1080p frame into smaller segments (tiles) and transmitting them as **multiple ST2110 streams over a single 2.5G interface**, you can:
-- ✅ **Maximize 2.5G bandwidth utilization** with multiple concurrent streams
-- ✅ **Support various segment combinations** (ROI, quad-split, etc.)
-- ✅ **Enable flexible format options** based on segment size
-- ✅ **Leverage standard ST2110-20** compliance per stream
-- ✅ **Simplify hardware requirements** (single NIC)
+By dividing the 1080p content into **vertical or horizontal strips** matching your LED panel layout, and transmitting each panel feed as an **independent ST2110 stream over a single 2.5G interface**, you can:
+- ✅ **Drive 2-6 LED panels** from a single Intel I225 2.5G NIC
+- ✅ **Support vertical and horizontal panel arrangements** (side-by-side or stacked)
+- ✅ **Enable ultrawide or tall displays** without multi-GPU systems
+- ✅ **Leverage standard ST2110-20** compliance per panel
+- ✅ **Simplify hardware requirements** (single NIC, single output device)
 
 ### Key Principle: Multiplexed Stream Architecture
 
-**Bandwidth scales linearly with pixel count:**
+**Bandwidth scales linearly with panel count:**
 ```
-Segment_Bandwidth = Full_Frame_Bandwidth × (Segment_Pixels / Full_Frame_Pixels)
+Panel_Bandwidth = Full_Frame_Bandwidth × (Panel_Pixels / Full_Frame_Pixels)
 
-Example: Full 1080p60 YUV 4:2:2 10-bit = 2.98 Gbps (exceeds 2.5G)
-         Quarter segment (960×540) = 0.75 Gbps per segment
-         Single 2.5G NIC can carry 3× quarter segments simultaneously ✅
-         OR 1× quarter segment @ higher FPS (200fps)
-         OR mixed resolutions/formats within 2.5G budget
+Example: Full 1080p30 YUV 4:2:2 10-bit = 1.50 Gbps
+         2-panel horizontal split (960×1080 each) = 0.75 Gbps per panel
+         3-panel vertical split (640×1080 each) = 0.50 Gbps per panel
+         Single 2.5G NIC can drive 3-4 LED panels simultaneously ✅
 ```
 
-**All segments share the same physical interface:**
-- Multiple RTP streams with different multicast addresses
-- Each stream is an independent ST2110-20 flow
+**All LED panel feeds share the same physical interface:**
+- One RTP stream per LED panel with unique multicast address
+- Each panel feed is an independent ST2110-20 flow
 - Streams are packet-interleaved at the NIC hardware level
 - Total bandwidth constrained to 2.5 Gbps link capacity
-- Receiver subscribes to relevant multicast groups for desired segments
+- Each LED panel controller subscribes to its designated multicast group
 
 ---
 
 ## Single-NIC Multi-Stream Architecture
 
-### Concept: Stream-Per-Segment Design
+### Concept: Stream-Per-Panel Design
 
-**Multiple Streams, Single Interface:**
+**Multiple LED Panels, Single Interface:**
 ```
 Single Intel I225 NIC (2.5 Gbps total)
 │
-├─── Stream 1 (239.1.1.1:20000) → Segment 1 @ 0.75 Gbps
-├─── Stream 2 (239.1.1.2:20000) → Segment 2 @ 0.75 Gbps  
-├─── Stream 3 (239.1.1.3:20000) → Segment 3 @ 0.75 Gbps
+├─── Panel 1 (239.1.1.1:20000) → Left vertical strip @ 0.75 Gbps
+├─── Panel 2 (239.1.1.2:20000) → Center vertical strip @ 0.75 Gbps
+├─── Panel 3 (239.1.1.3:20000) → Right vertical strip @ 0.75 Gbps
 └─── (Total: 2.25 Gbps, 90% utilization) ✅
 
-Packets from all streams are interleaved on the wire:
-[S1-pkt][S2-pkt][S3-pkt][S1-pkt][S2-pkt][S3-pkt]...
+         Content Source (1920×1080 @ 30fps)
+                      │
+              ┌───────┴───────┐
+              │ Segmentation  │
+              │    Engine     │
+              └───────┬───────┘
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+     Panel 1       Panel 2       Panel 3
+  (640×1080)    (640×1080)    (640×1080)
+   239.1.1.1     239.1.1.2     239.1.1.3
+        │             │             │
+        └─────────────┴─────────────┘
+                      │
+           ┌──────────┴──────────┐
+           │  Single I225 NIC    │
+           │  Packet Interleave  │
+           └──────────┬──────────┘
+                      │
+              Ethernet Network
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+   ┌────▼────┐   ┌───▼─────┐  ┌───▼─────┐
+   │ LED     │   │ LED     │  │ LED     │
+   │ Panel 1 │   │ Panel 2 │  │ Panel 3 │
+   │ (Left)  │   │ (Center)│  │ (Right) │
+   └─────────┘   └─────────┘  └─────────┘
 
-Receiver Side:
-├─── Subscribes to multicast 239.1.1.1 → Receives Stream 1
-├─── Subscribes to multicast 239.1.1.2 → Receives Stream 2  
-└─── Subscribes to multicast 239.1.1.3 → Receives Stream 3
-
-Optional: Frame reconstruction if segments form complete frame
+        Combined Display: 1920×1080 (3-panel ultrawide)
 ```
 
 **Key Characteristics:**
-- Each segment is an independent ST2110-20 RTP stream
-- Unique multicast group per stream
+- Each LED panel feed is an independent ST2110-20 RTP stream
+- Unique multicast group per panel
 - NIC hardware handles packet multiplexing automatically
 - Total bandwidth <= 2.5 Gbps (hard limit)
-- No timing synchronization required between streams (unless reconstructing)
+- Panel-to-panel sync achieved via PTP for seamless tiling
 
-**Benefits of Single-NIC Approach:**
-- ✅ Lower hardware cost (one NIC vs multiple)
-- ✅ Simplified network topology
-- ✅ Standard ST2110-20 per stream
-- ✅ Flexible receiver-side stream selection
-- ✅ Each stream can be independently consumed
-
----
-
-## Segmentation Strategies
-
-### 1. Grid Segmentation (Equal Size Tiles)
-
-#### 2×2 Grid (4 Segments)
-```
-┌─────────┬─────────┐
-│  Seg 1  │  Seg 2  │  Each: 960×540 pixels
-│ (TL)    │ (TR)    │  Coverage: Full 1080p
-├─────────┼─────────┤
-│  Seg 3  │  Seg 4  │
-│ (BL)    │ (BR)    │
-└─────────┴─────────┘
-```
-- **Segment Size:** 960×540 (518,400 pixels)
-- **Pixels per Segment:** 25% of full frame
-- **Bandwidth per Segment:** 1/4 of full frame
-
-#### 3×3 Grid (9 Segments)
-```
-┌─────┬─────┬─────┐
-│  1  │  2  │  3  │  Each: 640×360 pixels
-├─────┼─────┼─────┤  Coverage: Full 1080p
-│  4  │  5  │  6  │
-├─────┼─────┼─────┤
-│  7  │  8  │  9  │
-└─────┴─────┴─────┘
-```
-- **Segment Size:** 640×360 (230,400 pixels)
-- **Pixels per Segment:** 11.1% of full frame
-- **Bandwidth per Segment:** 1/9 of full frame
-
-#### 4×4 Grid (16 Segments)
-```
-┌───┬───┬───┬───┐
-│ 1 │ 2 │ 3 │ 4 │  Each: 480×270 pixels
-├───┼───┼───┼───┤  Coverage: Full 1080p
-│ 5 │ 6 │ 7 │ 8 │
-├───┼───┼───┼───┤
-│ 9 │10 │11 │12 │
-├───┼───┼───┼───┤
-│13 │14 │15 │16 │
-└───┴───┴───┴───┘
-```
-- **Segment Size:** 480×270 (129,600 pixels)
-- **Pixels per Segment:** 6.25% of full frame
-- **Bandwidth per Segment:** 1/16 of full frame
+**Benefits for LED Video Walls:**
+- ✅ **Lower hardware cost:** Single 2.5G NIC vs multi-GPU or 10G setup
+- ✅ **Simplified cabling:** One network cable drives multiple panels
+- ✅ **Standard ST2110-20:** Professional broadcast quality per panel
+- ✅ **Scalable layouts:** Support 2-6 panels vertically or horizontally
+- ✅ **Future-proof:** Easy to add/remove panels by adjusting stream count
 
 ---
 
-### 2. Horizontal/Vertical Strip Segmentation
+## LED Panel Segmentation Strategies
 
-#### Horizontal Split (2 Strips)
-```
-┌─────────────────────┐
-│    Top Half (1)     │  Each: 1920×540 pixels
-├─────────────────────┤
-│   Bottom Half (2)   │
-└─────────────────────┘
-```
-- **Segment Size:** 1920×540 (1,036,800 pixels)
-- **Pixels per Segment:** 50% of full frame
+### 1. Vertical Panel Arrangement (Side-by-Side)
 
-#### Vertical Split (2 Strips)
+#### 2-Panel Vertical (Dual Side-by-Side)
 ```
 ┌──────────┬──────────┐
-│   Left   │  Right   │  Each: 960×1080 pixels
-│   Half   │   Half   │
-│   (1)    │   (2)    │
+│          │          │  Left Panel:  960×1080 pixels
+│  Panel 1 │  Panel 2 │  Right Panel: 960×1080 pixels
+│  (Left)  │ (Right)  │  
+│          │          │  Combined: 1920×1080 ultrawide
+│          │          │  
 └──────────┴──────────┘
 ```
-- **Segment Size:** 960×1080 (1,036,800 pixels)
-- **Pixels per Segment:** 50% of full frame
+- **Panel Resolution:** 960×1080 (1,036,800 pixels)
+- **Pixels per Panel:** 50% of full frame
+- **Bandwidth per Panel @ 30fps:** 0.75 Gbps
+- **Total Bandwidth:** 1.50 Gbps (60% utilization)
+- **Use Case:** Ultrawide 2:1 LED wall
+
+#### 3-Panel Vertical (Triple Side-by-Side)
+```
+┌──────┬──────┬──────┐
+│      │      │      │  Left Panel:   640×1080 pixels
+│Panel │Panel │Panel │  Center Panel: 640×1080 pixels
+│  1   │  2   │  3   │  Right Panel:  640×1080 pixels
+│(Left)│(Cntr)│(Rght)│  
+│      │      │      │  Combined: 1920×1080 ultrawide
+└──────┴──────┴──────┘
+```
+- **Panel Resolution:** 640×1080 (691,200 pixels)
+- **Pixels per Panel:** 33.3% of full frame
+- **Bandwidth per Panel @ 30fps:** 0.50 Gbps
+- **Total Bandwidth:** 1.50 Gbps (60% utilization)
+- **Use Case:** Ultrawide 3:1 LED wall, retail displays
+
+#### 4-Panel Vertical (Quad Side-by-Side)
+```
+┌────┬────┬────┬────┐
+│Panel│Panel│Panel│Panel│  Each Panel: 480×1080 pixels
+│ 1  │ 2  │ 3  │ 4  │  
+│    │    │    │    │  Combined: 1920×1080 ultrawide
+└────┴────┴────┴────┘
+```
+- **Panel Resolution:** 480×1080 (518,400 pixels)
+- **Pixels per Panel:** 25% of full frame
+- **Bandwidth per Panel @ 30fps:** 0.37 Gbps
+- **Total Bandwidth:** 1.50 Gbps (60% utilization)
+- **Use Case:** Command centers, sports scoreboards
 
 ---
 
-### 3. Region of Interest (ROI) Segmentation
+### 2. Horizontal Panel Arrangement (Stacked)
 
-#### Center Focus (1/4 Frame)
+#### 2-Panel Horizontal (Top/Bottom Stack)
 ```
 ┌─────────────────────┐
-│                     │
-│   ┌───────────┐     │  Center: 960×540 pixels
-│   │    ROI    │     │  (25% of frame)
-│   └───────────┘     │
-│                     │
+│      Panel 1        │  Top Panel:    1920×540 pixels
+│       (Top)         │  Bottom Panel: 1920×540 pixels
+├─────────────────────┤  
+│      Panel 2        │  Combined: 1920×1080 tall display
+│     (Bottom)        │
 └─────────────────────┘
 ```
+- **Panel Resolution:** 1920×540 (1,036,800 pixels)
+- **Pixels per Panel:** 50% of full frame
+- **Bandwidth per Panel @ 30fps:** 0.75 Gbps
+- **Total Bandwidth:** 1.50 Gbps (60% utilization)
+- **Use Case:** Tall portrait LED walls, building facades
 
-#### Multi-Region (Variable Size)
+#### 3-Panel Horizontal (Triple Stack)
 ```
 ┌─────────────────────┐
-│  ┌─────┐            │  ROI 1: 640×360
-│  │ R1  │  ┌──────┐  │  ROI 2: 800×450
-│  └─────┘  │  R2  │  │  Custom regions of interest
-│           └──────┘  │
+│      Panel 1        │  Top Panel:    1920×360 pixels
+│       (Top)         │  Middle Panel: 1920×360 pixels
+├─────────────────────┤  Bottom Panel: 1920×360 pixels
+│      Panel 2        │  
+│      (Middle)       │  Combined: 1920×1080 tall display
+├─────────────────────┤
+│      Panel 3        │
+│     (Bottom)        │
 └─────────────────────┘
 ```
+- **Panel Resolution:** 1920×360 (691,200 pixels)
+- **Pixels per Panel:** 33.3% of full frame
+- **Bandwidth per Panel @ 30fps:** 0.50 Gbps
+- **Total Bandwidth:** 1.50 Gbps (60% utilization)
+- **Use Case:** Vertical tower displays, elevator lobbies
 
 ---
 
-## Bandwidth Calculations by Segment Size
+## Bandwidth Calculations for LED Panels
 
 ### Standard Format: YUV 4:2:2 10-bit (ST2110-20)
 
@@ -208,416 +222,400 @@ Optional: Frame reconstruction if segments form complete frame
 Bandwidth = Width × Height × FPS × 20 bpp × 1.10 overhead / 1,000,000,000
 ```
 
-#### Full Frame (1920×1080)
+#### Full Frame (1920×1080) - Single Panel
 | Frame Rate | Pixels/sec | Bandwidth | Fits 2.5G? |
 |-----------|------------|-----------|------------|
-| 24 fps | 49,766,400 | 1.20 Gbps | ✅ Yes |
-| 30 fps | 62,208,000 | 1.50 Gbps | ✅ Yes |
-| 50 fps | 103,680,000 | 2.49 Gbps | ⚠️ At limit (99.6%) |
-| 60 fps | 124,416,000 | 2.98 Gbps | ❌ No (119.2%) |
-| 120 fps | 248,832,000 | 5.97 Gbps | ❌ No (238.8%) |
+| 24 fps | 49,766,400 | 1.20 Gbps | ✅ Yes (48% util) |
+| 30 fps | 62,208,000 | 1.50 Gbps | ✅ Yes (60% util) |
+
+**Note:** Full-frame @30fps uses 60% of 2.5G link - leaves room for 1 additional panel stream.
 
 ---
 
-#### 2×2 Grid: Quarter Frame (960×540)
+### Vertical Panel Configurations (Side-by-Side)
 
-**Segment Details:**
-- **Resolution:** 960×540 pixels
-- **Pixel Reduction:** 75% fewer pixels than full frame
-- **Bandwidth Reduction:** 75% less bandwidth
+#### 2-Panel Vertical: Half-Width Panels (960×1080)
 
-| Frame Rate | Pixels/sec | Bandwidth/Segment | 2.5G Capacity | Segments Possible |
-|-----------|------------|-------------------|---------------|-------------------|
-| 24 fps | 12,441,600 | 0.30 Gbps | 2.5 Gbps | ✅ **8** segments |
-| 30 fps | 15,552,000 | 0.37 Gbps | 2.5 Gbps | ✅ **6** segments |
-| 60 fps | 31,104,000 | 0.75 Gbps | 2.5 Gbps | ✅ **3** segments |
-| 120 fps | 62,208,000 | 1.49 Gbps | 2.5 Gbps | ✅ **1** segment |
+**Panel Details:**
+- **Resolution per Panel:** 960×1080 pixels (1,036,800 pixels)
+- **Pixel Count:** 50% of full frame per panel
+- **Combined Display:** 1920×1080 ultrawide
 
-**Single-NIC Stream Scenarios:**
-- **Single 2.5G port with 3× streams:** 3× quarter segments @ 60fps ✅
-  - Each stream @ 0.75 Gbps
-  - Total: 2.25 Gbps (90% utilization)
-  - Use case: Triple ROI, or 3/4 of full frame coverage
-- **Single 2.5G port with 1× stream:** 1× quarter segment @ 200fps
-  - Single stream @ 2.49 Gbps (99.6% utilization)
-  - Use case: High-speed capture of specific region
-- **Single 2.5G port with 7× streams:** 7× one-ninth segments @ 60fps
-  - Each stream @ 0.33 Gbps
-  - Total: 2.31 Gbps (92% utilization)
-  - Use case: Multi-region monitoring
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (2 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 24,883,200 | 0.60 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 31,104,000 | 0.75 Gbps | 1.50 Gbps | 60% ✅ |
+
+**Key Finding:** 2-panel vertical @ 30fps = 60% utilization - excellent for dual side-by-side LED walls
 
 ---
 
-#### 3×3 Grid: One-Ninth Frame (640×360)
+#### 3-Panel Vertical: Third-Width Panels (640×1080)
 
-**Segment Details:**
-- **Resolution:** 640×360 pixels
-- **Pixel Reduction:** 88.9% fewer pixels than full frame
-- **Bandwidth Reduction:** 88.9% less bandwidth
+**Panel Details:**
+- **Resolution per Panel:** 640×1080 pixels (691,200 pixels)
+- **Pixel Count:** 33.3% of full frame per panel
+- **Combined Display:** 1920×1080 ultrawide (3:1 aspect ratio content)
 
-| Frame Rate | Pixels/sec | Bandwidth/Segment | 2.5G Capacity | Segments Possible |
-|-----------|------------|-------------------|---------------|-------------------|
-| 24 fps | 5,529,600 | 0.13 Gbps | 2.5 Gbps | ✅ **19** segments |
-| 30 fps | 6,912,000 | 0.17 Gbps | 2.5 Gbps | ✅ **14** segments |
-| 60 fps | 13,824,000 | 0.33 Gbps | 2.5 Gbps | ✅ **7** segments |
-| 120 fps | 27,648,000 | 0.66 Gbps | 2.5 Gbps | ✅ **3** segments |
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (3 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 16,588,800 | 0.40 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 20,736,000 | 0.50 Gbps | 1.50 Gbps | 60% ✅ |
 
-**Key Finding:** Can transmit 7× segments @ 60fps or 3× segments @ 120fps within 2.5G!
+**Key Finding:** 3-panel vertical @ 30fps = 60% utilization - perfect for retail/signage triple-wide displays
 
 ---
 
-#### 4×4 Grid: One-Sixteenth Frame (480×270)
+#### 4-Panel Vertical: Quarter-Width Panels (480×1080)
 
-**Segment Details:**
-- **Resolution:** 480×270 pixels
-- **Pixel Reduction:** 93.75% fewer pixels than full frame
-- **Bandwidth Reduction:** 93.75% less bandwidth
+**Panel Details:**
+- **Resolution per Panel:** 480×1080 pixels (518,400 pixels)
+- **Pixel Count:** 25% of full frame per panel
+- **Combined Display:** 1920×1080 ultrawide (4:1 aspect ratio content)
 
-| Frame Rate | Pixels/sec | Bandwidth/Segment | 2.5G Capacity | Segments Possible |
-|-----------|------------|-------------------|---------------|-------------------|
-| 24 fps | 3,110,400 | 0.07 Gbps | 2.5 Gbps | ✅ **35** segments |
-| 30 fps | 3,888,000 | 0.09 Gbps | 2.5 Gbps | ✅ **27** segments |
-| 60 fps | 7,776,000 | 0.19 Gbps | 2.5 Gbps | ✅ **13** segments |
-| 120 fps | 15,552,000 | 0.37 Gbps | 2.5 Gbps | ✅ **6** segments |
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (4 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 12,441,600 | 0.30 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 15,552,000 | 0.37 Gbps | 1.50 Gbps | 60% ✅ |
 
-**Key Finding:** Can transmit 13× segments @ 60fps or 6× segments @ 120fps within 2.5G!
+**Key Finding:** 4-panel vertical @ 30fps = 60% utilization - ideal for command centers and wide scoreboards
 
 ---
 
-#### Horizontal/Vertical Split: Half Frame (1920×540 or 960×1080)
+### Horizontal Panel Configurations (Stacked)
 
-**Segment Details:**
-- **Resolution:** 1920×540 or 960×1080 pixels (both = 1,036,800 pixels)
-- **Pixel Reduction:** 50% fewer pixels than full frame
-- **Bandwidth Reduction:** 50% less bandwidth
+#### 2-Panel Horizontal: Half-Height Panels (1920×540)
 
-| Frame Rate | Pixels/sec | Bandwidth/Segment | 2.5G Capacity | Segments Possible |
-|-----------|------------|-------------------|---------------|-------------------|
-| 24 fps | 24,883,200 | 0.60 Gbps | 2.5 Gbps | ✅ **4** segments |
-| 30 fps | 31,104,000 | 0.75 Gbps | 2.5 Gbps | ✅ **3** segments |
-| 60 fps | 62,208,000 | 1.49 Gbps | 2.5 Gbps | ✅ **1** segment |
-| 120 fps | 124,416,000 | 2.98 Gbps | 2.5 Gbps | ❌ **0** segments |
+**Panel Details:**
+- **Resolution per Panel:** 1920×540 pixels (1,036,800 pixels)
+- **Pixel Count:** 50% of full frame per panel
+- **Combined Display:** 1920×1080 tall display
 
-**Key Finding:** Can transmit 1× half-frame @ 60fps within 2.5G (perfect for top/bottom split)
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (2 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 24,883,200 | 0.60 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 31,104,000 | 0.75 Gbps | 1.50 Gbps | 60% ✅ |
 
----
-
-## Format and Bit Depth Support
-
-### Quarter Frame (960×540) - YUV Formats
-
-**@ 60fps within 2.5G:**
-
-| Format | Bit Depth | Bits/Pixel | Bandwidth | Max Segments | Link Utilization |
-|--------|-----------|------------|-----------|--------------|------------------|
-| **YUV 4:2:0** | 8-bit | 12 | 0.45 Gbps | ✅ **5** | 90% |
-| YUV 4:2:0 | 10-bit | 15 | 0.56 Gbps | ✅ **4** | 89% |
-| YUV 4:2:0 | 12-bit | 18 | 0.67 Gbps | ✅ **3** | 80% |
-| **YUV 4:2:2** | 8-bit | 16 | 0.60 Gbps | ✅ **4** | 96% |
-| **YUV 4:2:2** ★ | **10-bit** | **20** | **0.75 Gbps** | **✅ 3** | **90%** |
-| YUV 4:2:2 | 12-bit | 24 | 0.90 Gbps | ✅ **2** | 72% |
-| **YUV 4:4:4** | 8-bit | 24 | 0.90 Gbps | ✅ **2** | 72% |
-| YUV 4:4:4 | 10-bit | 30 | 1.12 Gbps | ✅ **2** | 90% |
-| YUV 4:4:4 | 12-bit | 36 | 1.34 Gbps | ✅ **1** | 54% |
-
-★ = ST2110-20 standard format
+**Key Finding:** 2-panel horizontal @ 30fps = 60% utilization - excellent for stacked portrait displays
 
 ---
 
-### Quarter Frame (960×540) - RGB Formats
+#### 3-Panel Horizontal: Third-Height Panels (1920×360)
 
-**@ 60fps within 2.5G:**
+**Panel Details:**
+- **Resolution per Panel:** 1920×360 pixels (691,200 pixels)
+- **Pixel Count:** 33.3% of full frame per panel
+- **Combined Display:** 1920×1080 vertical tower
 
-| Format | Bit Depth | Bits/Pixel | Bandwidth | Max Segments | Link Utilization |
-|--------|-----------|------------|-----------|--------------|------------------|
-| **RGB** | 8-bit | 24 | 0.90 Gbps | ✅ **2** | 72% |
-| RGB | 10-bit | 30 | 1.12 Gbps | ✅ **2** | 90% |
-| RGB | 12-bit | 36 | 1.34 Gbps | ✅ **1** | 54% |
-| RGB | 16-bit | 48 | 1.79 Gbps | ✅ **1** | 72% |
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (3 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 16,588,800 | 0.40 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 20,736,000 | 0.50 Gbps | 1.50 Gbps | 60% ✅ |
 
----
-
-### One-Ninth Frame (640×360) - All Formats
-
-**@ 60fps within 2.5G:**
-
-| Format | Bit Depth | Bits/Pixel | Bandwidth | Max Segments | Link Utilization |
-|--------|-----------|------------|-----------|--------------|------------------|
-| **YUV 4:2:0** | 8-bit | 12 | 0.20 Gbps | ✅ **12** | 96% |
-| YUV 4:2:0 | 10-bit | 15 | 0.25 Gbps | ✅ **10** | 100% (at limit) |
-| YUV 4:2:0 | 12-bit | 18 | 0.30 Gbps | ✅ **8** | 96% |
-| **YUV 4:2:2** | 8-bit | 16 | 0.27 Gbps | ✅ **9** | 97% |
-| **YUV 4:2:2** ★ | **10-bit** | **20** | **0.33 Gbps** | **✅ 7** | **92%** |
-| YUV 4:2:2 | 12-bit | 24 | 0.40 Gbps | ✅ **6** | 96% |
-| **YUV 4:4:4** | 8-bit | 24 | 0.40 Gbps | ✅ **6** | 96% |
-| YUV 4:4:4 | 10-bit | 30 | 0.50 Gbps | ✅ **5** | 100% (at limit) |
-| YUV 4:4:4 | 12-bit | 36 | 0.60 Gbps | ✅ **4** | 96% |
-| **RGB** | 8-bit | 24 | 0.40 Gbps | ✅ **6** | 96% |
-| RGB | 10-bit | 30 | 0.50 Gbps | ✅ **5** | 100% (at limit) |
-| RGB | 12-bit | 36 | 0.60 Gbps | ✅ **4** | 96% |
+**Key Finding:** 3-panel horizontal @ 30fps = 60% utilization - ideal for vertical tower installations
 
 ---
 
-### One-Sixteenth Frame (480×270) - All Formats
+#### 5-Panel Horizontal: Fifth-Height Panels (1920×216)
 
-**@ 120fps within 2.5G:**
+**Panel Details:**
+- **Resolution per Panel:** 1920×216 pixels (414,720 pixels)
+- **Pixel Count:** 20% of full frame per panel
+- **Combined Display:** 1920×1080 segmented horizontal bands
 
-| Format | Bit Depth | Bits/Pixel | Bandwidth | Max Segments | Link Utilization |
-|--------|-----------|------------|-----------|--------------|------------------|
-| **YUV 4:2:0** | 8-bit | 12 | 0.22 Gbps | ✅ **11** | 97% |
-| YUV 4:2:0 | 10-bit | 15 | 0.28 Gbps | ✅ **8** | 90% |
-| YUV 4:2:0 | 12-bit | 18 | 0.34 Gbps | ✅ **7** | 95% |
-| **YUV 4:2:2** | 8-bit | 16 | 0.30 Gbps | ✅ **8** | 96% |
-| **YUV 4:2:2** ★ | **10-bit** | **20** | **0.37 Gbps** | **✅ 6** | **89%** |
-| YUV 4:2:2 | 12-bit | 24 | 0.45 Gbps | ✅ **5** | 90% |
-| **YUV 4:4:4** | 8-bit | 24 | 0.45 Gbps | ✅ **5** | 90% |
-| YUV 4:4:4 | 10-bit | 30 | 0.56 Gbps | ✅ **4** | 90% |
-| YUV 4:4:4 | 12-bit | 36 | 0.67 Gbps | ✅ **3** | 80% |
-| **RGB** | 8-bit | 24 | 0.45 Gbps | ✅ **5** | 90% |
-| RGB | 10-bit | 30 | 0.56 Gbps | ✅ **4** | 90% |
-| RGB | 12-bit | 36 | 0.67 Gbps | ✅ **3** | 80% |
+| Frame Rate | Pixels/sec/Panel | Bandwidth/Panel | Total (5 panels) | 2.5G Utilization |
+|-----------|------------------|-----------------|------------------|------------------|
+| 24 fps | 9,953,280 | 0.24 Gbps | 1.20 Gbps | 48% ✅ |
+| 30 fps | 12,441,600 | 0.30 Gbps | 1.50 Gbps | 60% ✅ |
+
+**Key Finding:** 5-panel horizontal @ 30fps = 60% utilization - perfect for multi-band ticker/status displays
 
 ---
 
-## Maximum Frame Rates by Configuration
+## LED Panel Format and Color Support
 
-### Quarter Frame (960×540) - Maximum FPS
+### YUV Formats (Broadcast Standard)
 
-**Using YUV 4:2:2 10-bit (ST2110 standard):**
+**YUV 4:2:2 10-bit - Recommended for LED Video Walls**
 
-| Configuration | Bandwidth/Segment | Max FPS/Segment | Notes |
-|--------------|-------------------|-----------------|-------|
-| 1× segment only | 0.75 Gbps @ 60fps | **200 fps** | Ultra high frame rate |
-| 2× segments | 1.49 Gbps total | **120 fps** each | Dual ROI @ 120fps |
-| 3× segments | 2.24 Gbps total | **80 fps** each | Triple ROI @ 80fps |
-| 4× segments | 2.98 Gbps total | **60 fps** each | Full 2×2 grid @ 60fps |
+| Panel Config | Per-Panel Resolution | Bandwidth/Panel @ 30fps | Max Panels | Total Bandwidth | Utilization |
+|--------------|---------------------|------------------------|------------|-----------------|-------------|
+| 2-Panel Vertical | 960×1080 | 0.75 Gbps | 3 | 2.25 Gbps | 90% ✅ |
+| 3-Panel Vertical | 640×1080 | 0.50 Gbps | 5 | 2.50 Gbps | 100% |
+| 4-Panel Vertical | 480×1080 | 0.37 Gbps | 6 | 2.22 Gbps | 89% ✅ |
+| 2-Panel Horizontal | 1920×540 | 0.75 Gbps | 3 | 2.25 Gbps | 90% ✅ |
+| 3-Panel Horizontal | 1920×360 | 0.50 Gbps | 5 | 2.50 Gbps | 100% |
+| 5-Panel Horizontal | 1920×216 | 0.30 Gbps | 8 | 2.40 Gbps | 96% ✅ |
 
-**Using YUV 4:2:0 10-bit (HDR, bandwidth-efficient):**
+★ **ST2110-20 Standard:** Production quality for LED installations
 
-| Configuration | Bandwidth/Segment | Max FPS/Segment | Notes |
-|--------------|-------------------|-----------------|-------|
-| 1× segment only | 0.56 Gbps @ 60fps | **267 fps** | Extreme high speed |
-| 2× segments | 1.12 Gbps total | **133 fps** each | Dual ROI @ 133fps |
-| 3× segments | 1.68 Gbps total | **89 fps** each | Triple ROI @ 89fps |
-| 4× segments | 2.24 Gbps total | **67 fps** each | Full 2×2 grid @ 67fps |
+**YUV 4:2:0 10-bit - Bandwidth-Efficient Option**
 
----
+| Panel Config | Per-Panel Resolution | Bandwidth/Panel @ 30fps | Max Panels | Total Bandwidth | Utilization |
+|--------------|---------------------|------------------------|------------|-----------------|-------------|
+| 2-Panel Vertical | 960×1080 | 0.56 Gbps | 4 | 2.24 Gbps | 90% ✅ |
+| 3-Panel Vertical | 640×1080 | 0.37 Gbps | 6 | 2.22 Gbps | 89% ✅ |
+| 4-Panel Vertical | 480×1080 | 0.28 Gbps | 8 | 2.24 Gbps | 90% ✅ |
 
-### One-Ninth Frame (640×360) - Maximum FPS
-
-**Using YUV 4:2:2 10-bit (ST2110 standard):**
-
-| Configuration | Bandwidth/Segment | Max FPS/Segment | Notes |
-|--------------|-------------------|-----------------|-------|
-| 1× segment only | 0.33 Gbps @ 60fps | **454 fps** | Ultra high frame rate |
-| 3× segments | 1.00 Gbps total | **182 fps** each | Triple ROI @ 182fps |
-| 6× segments | 2.00 Gbps total | **91 fps** each | 2×3 grid @ 91fps |
-| 9× segments | 3.00 Gbps total | **60 fps** each | Full 3×3 grid @ 60fps ⚠️ |
-
-⚠️ 9 segments @ 60fps = 2.97 Gbps (exceeds 2.5G slightly, use 50fps instead for safety)
+**Key Benefit:** 25% bandwidth reduction vs 4:2:2
 
 ---
 
-### One-Sixteenth Frame (480×270) - Maximum FPS
+### RGB Formats (High Color Accuracy)
 
-**Using YUV 4:2:2 10-bit (ST2110 standard):**
+**RGB 10-bit - LED Calibration & Graphics**
 
-| Configuration | Bandwidth/Segment | Max FPS/Segment | Notes |
-|--------------|-------------------|-----------------|-------|
-| 1× segment only | 0.19 Gbps @ 60fps | **789 fps** | Extreme high speed |
-| 4× segments | 0.75 Gbps total | **200 fps** each | Quad ROI @ 200fps |
-| 8× segments | 1.49 Gbps total | **100 fps** each | Half grid @ 100fps |
-| 16× segments | 2.98 Gbps total | **50 fps** each | Full 4×4 grid @ 50fps ⚠️ |
+| Panel Config | Per-Panel Resolution | Bandwidth/Panel @ 30fps | Max Panels | Total Bandwidth | Utilization |
+|--------------|---------------------|------------------------|------------|-----------------|-------------|
+| 2-Panel Vertical | 960×1080 | 1.12 Gbps | 2 | 2.24 Gbps | 90% ✅ |
+| 3-Panel Vertical | 640×1080 | 0.75 Gbps | 3 | 2.25 Gbps | 90% ✅ |
+| 4-Panel Vertical | 480×1080 | 0.56 Gbps | 4 | 2.24 Gbps | 90% ✅ |
 
-⚠️ 16 segments require careful bandwidth management near 2.5G limit
+**Use Cases:**
+- ✅ LED panel color calibration (per-panel uniformity)
+- ✅ Computer graphics rendering (CAD, 3D visualization)
+- ✅ True color accuracy (no chroma subsampling)
+
+**RGB 8-bit - Budget Option**
+
+| Panel Config | Per-Panel Resolution | Bandwidth/Panel @ 30fps | Max Panels | Total Bandwidth | Utilization |
+|--------------|---------------------|------------------------|------------|-----------------|-------------|
+| 3-Panel Vertical | 640×1080 | 0.60 Gbps | 4 | 2.40 Gbps | 96% ✅ |
+| 4-Panel Vertical | 480×1080 | 0.45 Gbps | 5 | 2.25 Gbps | 90% ✅ |
 
 ---
 
-## Practical Use Cases
+### Format Recommendations by Application
 
-### Use Case 1: Broadcast Graphics Overlay
+| Application | Recommended Format | Panels Supported | Reason |
+|-------------|-------------------|------------------|--------|
+| **Retail/Signage** | YUV 4:2:2 10-bit | 2-4 vertical | Broadcast quality, video content |
+| **Command Center** | YUV 4:2:2 10-bit | 3-4 panels | Dashboard graphics + video |
+| **Building Facade** | YUV 4:2:0 10-bit | 4-6 panels | Bandwidth-efficient for large arrays |
+| **Calibration/Test** | RGB 10-bit | 2-3 panels | True color, per-panel uniformity |
+| **Budget Installs** | YUV 4:2:0 8-bit | 5-8 panels | Maximum panel count, lower quality |
 
-**Scenario:** Live sports with scoreboard and statistics box
+---
+
+### LED Panel Color Space Considerations
+
+**YUV → RGB Conversion:**
+- LED panels natively use RGB
+- YUV content requires real-time conversion at LED controller
+- ST2110-20 uses Rec.709 color space (HD standard)
+- Ensure LED controller supports BT.709 YUV-to-RGB matrix
+
+**Direct RGB Transport:**
+- No conversion overhead
+- Higher bandwidth requirement (30 bpp vs 20 bpp for YUV 4:2:2)
+- Ideal for computer-generated graphics
+- Recommended for multi-panel calibration procedures
+
+---
+
+## Practical LED Video Wall Use Cases
+
+### Use Case 1: Retail Ultrawide Display (3-Panel Vertical)
+
+**Scenario:** Store window display with triple-wide panoramic content
 
 **Configuration:**
 ```
-┌─────────────────────────┐
-│ ┌───────────────┐       │  Main feed: Compressed or lower quality
-│ │   Scoreboard  │       │  Overlay: Uncompressed high quality
-│ └───────────────┘       │
-│                         │  Segment: 640×180 pixels
-│                         │  Format: RGB 10-bit @ 60fps
-│                         │  Bandwidth: 0.25 Gbps
-│   ┌──────────────┐      │
-│   │   Stats Box  │      │  2.5G NIC easily handles overlay + telemetry
-│   └──────────────┘      │
-└─────────────────────────┘
-```
+Content Source: 1920×1080 @ 30fps
+Segmentation: 3 vertical panels (640×1080 each)
 
-**Benefits:**
-- High quality text and graphics
-- Lower bandwidth for main video
-- Independent update rates
-
----
-
-### Use Case 2: Triple-Stream ROI Monitoring
-
-**Scenario:** Security/surveillance with 3 regions of interest on single I225 NIC
-
-**Single-NIC Multi-Stream Configuration:**
-```
-Camera/Source: 1920×1080 @ 60fps YUV 4:2:2 10-bit
-
-         ┌──────────────────┐
-         │  ROI Selection   │
-         │  & Crop Engine   │
-         └────────┬─────────┘
-                  │
-         ┌────────┴─────────┐
-         │  3 ROI Streams   │
-         │  960×540 each    │
-         └──────┬───────────┘
-                │
-    ┌───────────┼───────────┐
-    │           │           │
-    ▼           ▼           ▼
-┌───┴───────────┴───────────┴────┐
-│   Single Intel I225 2.5GbE NIC │
-│                                 │
-│  Stream 1: 239.1.1.1 (0.75Gb)  │
-│  Stream 2: 239.1.1.2 (0.75Gb)  │
-│  Stream 3: 239.1.1.3 (0.75Gb)  │
-│  ────────────────────────────  │
-│  Total: 2.25 Gbps (90% util)   │
-└────────────┬────────────────────┘
-             │
-        IP Network
-             │
-   ┌─────────┼─────────┐
-   │         │         │
-   ▼         ▼         ▼
-┌──┴─────────┴─────────┴──┐
-│  Receiver: Single I225  │
-│  Subscribe to relevant  │
-│  multicast groups       │
-│  (1, 2, 3, or all)      │
-└─────────────────────────┘
+         640px      640px      640px
+      ┌─────────┬─────────┬─────────┐
+      │ Panel 1 │ Panel 2 │ Panel 3 │  Height: 1080px
+      │ (Left)  │(Center) │(Right)  │
+      └─────────┴─────────┴─────────┘
+         LED       LED       LED
+      Controller Controller Controller
+      239.1.1.1  239.1.1.2  239.1.1.3
 ```
 
 **System Bandwidth:**
-- Per stream: 0.75 Gbps
-- Total (3 streams): 2.25 Gbps
-- Link utilization: 90%
-- Result: 3× independent ST2110 streams ✅
+- Per panel: 0.50 Gbps @ 30fps
+- Total (3 panels): 1.50 Gbps
+- Link utilization: 60%
+- Result: Seamless 3-panel ultrawide @ 30fps ✅
 
 **Benefits:**
-- ✅ Single NIC hardware (low cost)
-- ✅ Each stream independently selectable
-- ✅ Flexible receiver subscription
-- ✅ Standard ST2110-20 per stream
-- ✅ 10% headroom for management traffic
+- ✅ Ultrawide 3:1 aspect ratio content
+- ✅ Budget hardware (single I225 NIC)
+- ✅ Professional broadcast quality (YUV 4:2:2 10-bit)
+- ✅ 40% headroom for control traffic
 
 ---
 
-### Use Case 3: Surgical/Medical Imaging
+### Use Case 2: Command Center 4-Panel Wide Screen
 
-**Scenario:** High-precision medical procedure monitoring
+**Scenario:** NOC/SOC operations center with quad-wide monitoring display
 
 **Configuration:**
 ```
-┌─────────────────────────┐
-│                         │
-│     ┌─────────┐         │  ROI: 800×600 pixels
-│     │         │         │  Format: RGB 12-bit @ 60fps
-│     │   ROI   │         │  Bandwidth: 1.90 Gbps
-│     │         │         │
-│     └─────────┘         │  Additional: Thumbnails + metadata
-│                         │  Total: ~2.3 Gbps ✅
-└─────────────────────────┘
+Content Source: 1920×1080 @ 30fps
+Segmentation: 4 vertical panels (480×1080 each)
+
+      480px   480px   480px   480px
+    ┌──────┬──────┬──────┬──────┐
+    │Panel │Panel │Panel │Panel │  Height: 1080px
+    │  1   │  2   │  3   │  4   │
+    └──────┴──────┴──────┴──────┘
+       LED     LED     LED     LED
+   239.1.1.1  ...2   ...3   ...4
 ```
 
+**System Bandwidth:**
+- Per panel: 0.37 Gbps @ 30fps
+- Total (4 panels): 1.50 Gbps
+- Link utilization: 60%
+- Result: 4-panel wide display @ 30fps ✅
+
 **Benefits:**
-- True color accuracy (RGB 12-bit)
-- Smooth 60fps motion
-- ROI flexibility
-- Diagnostic quality preservation
+- ✅ Wide 4:1 format for dashboards
+- ✅ Single network cable to distribution
+- ✅ Each panel independently addressable
+- ✅ Flexible content layouts
 
 ---
 
-### Use Case 4: High Frame Rate Sports Analysis
+### Use Case 3: Building Facade Vertical Display (3-Panel Stack)
 
-**Scenario:** Golf swing / tennis serve analysis
+**Scenario:** Elevator lobby or building exterior vertical tower display
 
 **Configuration:**
 ```
-┌─────────────────────────┐
-│                         │
-│    ┌──────────┐         │  Analysis area: 640×360 pixels
-│    │          │         │  Format: YUV 4:2:2 10-bit @ 240fps
-│    │  Player  │         │  Bandwidth: 1.32 Gbps ✅
-│    │   Zone   │         │
-│    └──────────┘         │  Additional: Context stream @ 30fps
-│                         │  Total: ~1.6 Gbps ✅
-└─────────────────────────┘
+Content Source: 1920×1080 @ 30fps  
+Segmentation: 3 horizontal panels (1920×360 each)
+
+     ┌──────────────────────┐
+     │      Panel 1 (Top)   │  360px
+     ├──────────────────────┤
+     │   Panel 2 (Middle)   │  360px
+     ├──────────────────────┤
+     │   Panel 3 (Bottom)   │  360px
+     └──────────────────────┘
+         Width: 1920px
+
+       LED Controller 239.1.1.1
+       LED Controller 239.1.1.2  
+       LED Controller 239.1.1.3
 ```
 
+**System Bandwidth:**
+- Per panel: 0.50 Gbps @ 30fps
+- Total (3 panels): 1.50 Gbps
+- Link utilization: 60%
+- Result: 3-panel vertical tower @ 30fps ✅
+
 **Benefits:**
-- Ultra-smooth slow motion
-- Standard format compliance
-- Ample bandwidth for analysis tools
-- Real-time processing capable
+- ✅ Portrait/vertical content format
+- ✅ Ideal for building facades
+- ✅ Elevator lobby installations
+- ✅ Synchronized panel timing via PTP
 
 ---
 
-### Use Case 5: Security/Surveillance with ROI
+### Use Case 4: Sports Stadium Scoreboard (2-Panel Wide)
 
-**Scenario:** Entrance monitoring with face recognition zone
+**Scenario:** Stadium scoreboard with dual-panel horizontal layout
 
 **Configuration:**
 ```
-┌─────────────────────────┐
-│   ┌──────┐              │  Full frame: Compressed @ 10:1
-│   │ Face │              │              ~0.30 Gbps
-│   │ ROI  │              │
-│   └──────┘              │  ROI: 480×480 @ 60fps
-│                         │       YUV 4:2:2 10-bit uncompressed
-│        Door             │       0.43 Gbps
-│                         │
-└─────────────────────────┘  Total: ~0.73 Gbps ✅
-                            Leaves bandwidth for 2+ cameras
+Content Source: 1920×1080 @ 30fps
+Segmentation: 2 vertical panels (960×1080 each)
+
+         960px            960px
+      ┌──────────────┬──────────────┐
+      │              │              │
+      │   Panel 1    │   Panel 2    │  Height: 1080px
+      │   (Left)     │   (Right)    │
+      │              │              │
+      └──────────────┴──────────────┘
+          LED              LED
+      Controller       Controller
+       239.1.1.1       239.1.1.2
 ```
 
+**System Bandwidth:**
+- Per panel: 0.75 Gbps @ 30fps
+- Total (2 panels): 1.50 Gbps
+- Link utilization: 60%
+- Result: Dual-panel wide scoreboard @ 30fps ✅
+
 **Benefits:**
-- Full scene awareness (compressed)
-- High-quality biometric data (uncompressed ROI)
-- Multiple camera support
-- AI processing optimization
+- ✅ Wide format for game scores and stats
+- ✅ Separate panel feeds for A/B content
+- ✅ Can show split content (score | video replay)
+- ✅ Broadcast quality graphics
 
 ---
 
-### Use Case 6: Virtual Production LED Wall Calibration
+### Use Case 5: Conference Room Dual-Height Display (2-Panel Stack)
 
-**Scenario:** LED panel color calibration patches
+**Scenario:** Meeting room with stacked presentation screens
 
 **Configuration:**
 ```
-┌───┬───┬───┬───┐
-│ 1 │ 2 │ 3 │ 4 │  16× calibration zones
-├───┼───┼───┼───┤  Each: 480×270 pixels
-│ 5 │ 6 │ 7 │ 8 │  Format: RGB 16-bit @ 30fps
-├───┼───┼───┼───┤  Bandwidth/segment: 0.27 Gbps
-│ 9 │10 │11 │12 │  Total for 9 zones: 2.43 Gbps ✅
-├───┼───┼───┼───┤
-│13 │14 │15 │16 │  (Transmit 9 of 16 per iteration)
-└───┴───┴───┴───┘
+Content Source: 1920×1080 @ 30fps
+Segmentation: 2 horizontal panels (1920×540 each)
+
+     ┌─────────────────────────┐
+     │   Panel 1 (Top)         │  540px
+     │   (Primary Content)     │
+     ├─────────────────────────┤
+     │   Panel 2 (Bottom)      │  540px
+     │   (Notes/Video)         │
+     └─────────────────────────┘
+            Width: 1920px
+
+        LED Controller 239.1.1.1
+        LED Controller 239.1.1.2
 ```
 
+**System Bandwidth:**
+- Per panel: 0.75 Gbps @ 30fps
+- Total (2 panels): 1.50 Gbps
+- Link utilization: 60%
+- Result: Dual-height stacked display @ 30fps ✅
+
 **Benefits:**
-- True color accuracy (16-bit)
-- Per-panel calibration
-- High dynamic range support
-- Sequential zone transmission
+- ✅ Split presentation/video feeds
+- ✅ Independent content zones
+- ✅ Uncompressed quality for text/diagrams
+- ✅ Easy panel repurposing
+
+---
+
+### Use Case 6: LED Wall Calibration & Testing
+
+**Scenario:** Panel-by-panel color calibration and uniformity testing
+
+**Configuration:**
+```
+Test Pattern Source: 1920×1080 @ 30fps
+Target: Any vertical or horizontal panel arrangement
+
+Calibration Process:
+1. Send test pattern as segmented streams  
+2. Each panel controller receives its segment
+3. Measure uniformity, color accuracy per panel
+4. Adjust panel settings independently
+5. Verify PTP sync alignment between panels
+```
+
+**System Requirements:**
+- Per panel bandwidth: 0.37-0.75 Gbps (depends on count)
+- Total: ≤1.50 Gbps for up to 4 panels
+- Precision: ST2110-20 uncompressed for accurate color
+- Sync: PTP master/slave for seamless tiling
+
+**Benefits:**
+- ✅ Per-panel independent calibration
+- ✅ True color accuracy (10-bit YUV or RGB)
+- ✅ Frame-accurate sync verification
+- ✅ Production-quality validation
 
 ---
 
@@ -641,30 +639,45 @@ Camera/Source: 1920×1080 @ 60fps YUV 4:2:2 10-bit
 
 ---
 
-### 2. Segment Boundary Handling
+### 2. LED Panel Boundary Alignment
 
-**Pixel-Perfect Alignment:**
+**Pixel-Perfect Panel Alignment:**
 ```python
-# Ensure no gaps or overlaps
-segment_width = frame_width // columns
-segment_height = frame_height // rows
+# Ensure no gaps or overlaps between LED panels
+frame_width = 1920
+frame_height = 1080
+num_panels = 3  # Vertical arrangement
 
-# Example 2×2 grid from 1920×1080:
-seg_tl = (0, 0, 960, 540)       # Top-left
-seg_tr = (960, 0, 1920, 540)    # Top-right
-seg_bl = (0, 540, 960, 1080)    # Bottom-left
-seg_br = (960, 540, 1920, 1080) # Bottom-right
+panel_width = frame_width // num_panels
+panel_height = frame_height
+
+# Example 3-panel vertical LED wall from 1920×1080:
+panel_left   = (0,    0, 640,  1080)  # Left panel (640×1080)
+panel_center = (640,  0, 1280, 1080)  # Center panel (640×1080)
+panel_right  = (1280, 0, 1920, 1080)  # Right panel (640×1080)
+
+# Example 3-panel horizontal LED wall:
+panel_top    = (0, 0,   1920, 360)    # Top panel (1920×360)
+panel_middle = (0, 360, 1920, 720)    # Middle panel (1920×360)
+panel_bottom = (0, 720, 1920, 1080)   # Bottom panel (1920×360)
 ```
 
 **Chroma Subsampling Considerations:**
 ```
-YUV 4:2:2: Segment widths must be even (chroma pairs)
-YUV 4:2:0: Segment widths AND heights must be even
+YUV 4:2:2: Panel widths must be even (chroma pairs)
+YUV 4:2:0: Panel widths AND heights must be even
 
-✅ Good: 960×540 (both even)
-✅ Good: 640×360 (both even)
-❌ Bad: 641×359 (both odd - causes chroma misalignment)
+✅ Good: 640×1080 (width even, 3-panel vertical)
+✅ Good: 1920×360 (both even, 3-panel horizontal)
+✅ Good: 480×1080 (both even, 4-panel vertical)
+❌ Bad: 641×1080 (odd width - causes chroma misalignment)
 ```
+
+**LED Panel Physical Alignment:**
+- Each panel receives one complete stream
+- No frame reconstruction needed at LED controller
+- Panel offsets used for bezel compensation only
+- PTP sync ensures frame-level synchronization across panels
 
 ---
 
@@ -729,11 +742,11 @@ Total recommended: 64 MB per stream
 
 ---
 
-#### Sample Configuration: Single I225 with 4 Streams
+#### Sample Configuration: Single I225 with 3-Panel LED Wall
 
-**Scenario:** Transmit 4× segments (3× active @ 60fps) on single I225 NIC
+**Scenario:** Transmit 3-panel vertical LED wall (640×1080 per panel) @ 30fps on single I225 NIC
 
-**TX Configuration (Single I225 NIC, 3 active streams):**
+**TX Configuration (Single I225 NIC, 3 LED panel streams):**
 ```json
 {
   "interfaces": [
@@ -751,16 +764,16 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.1",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_1",
+      "name": "led_panel_left",
       "metadata": {
-        "segment_id": 1,
+        "panel_id": 1,
         "x_offset": 0,
         "y_offset": 0,
-        "description": "Top-left quarter"
+        "description": "Left LED panel (640×1080)"
       }
     },
     {
@@ -769,16 +782,16 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.2",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_2",
+      "name": "led_panel_center",
       "metadata": {
-        "segment_id": 2,
-        "x_offset": 960,
+        "panel_id": 2,
+        "x_offset": 640,
         "y_offset": 0,
-        "description": "Top-right quarter"
+        "description": "Center LED panel (640×1080)"
       }
     },
     {
@@ -787,29 +800,29 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.3",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_3",
+      "name": "led_panel_right",
       "metadata": {
-        "segment_id": 3,
-        "x_offset": 0,
-        "y_offset": 540,
-        "description": "Bottom-left quarter"
+        "panel_id": 3,
+        "x_offset": 1280,
+        "y_offset": 0,
+        "description": "Right LED panel (640×1080)"
       }
     }
   ],
   "bandwidth_budget": {
     "link_speed_gbps": 2.5,
-    "total_allocated_gbps": 2.25,
-    "utilization_percent": 90,
-    "headroom_gbps": 0.25
+    "total_allocated_gbps": 1.50,
+    "utilization_percent": 60,
+    "headroom_gbps": 1.00
   }
 }
 ```
 
-**RX Configuration (Single I225 NIC, 3 streams):**
+**RX Configuration (LED Controllers - Each receives one stream):**
 ```json
 {
   "interfaces": [
@@ -826,13 +839,13 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.1",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_1",
+      "name": "led_panel_left",
       "metadata": {
-        "segment_id": 1,
+        "panel_id": 1,
         "x_offset": 0,
         "y_offset": 0
       }
@@ -843,14 +856,14 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.2",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_2",
+      "name": "led_panel_center",
       "metadata": {
-        "segment_id": 2,
-        "x_offset": 960,
+        "panel_id": 2,
+        "x_offset": 640,
         "y_offset": 0
       }
     },
@@ -860,23 +873,23 @@ Total recommended: 64 MB per stream
       "ip": "239.1.1.3",
       "port": 20000,
       "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
+      "width": 640,
+      "height": 1080,
+      "fps": "p30",
       "fmt": "YUV422_10bit",
-      "name": "segment_3",
+      "name": "led_panel_right",
       "metadata": {
-        "segment_id": 3,
-        "x_offset": 0,
-        "y_offset": 540
+        "panel_id": 3,
+        "x_offset": 1280,
+        "y_offset": 0
       }
     }
   ],
   "notes": [
-    "All streams received on same physical interface",
+    "All LED panel streams received on same physical interface",
     "Hardware RSS distributes packets to CPU cores",
-    "Application can selectively process streams",
-    "Optional: Reconstruct partial frame from 3 segments"
+    "Each LED controller subscribes to its specific multicast",
+    "No frame reconstruction needed - each panel displays independently"
   ]
 }
 ```
@@ -885,7 +898,7 @@ Total recommended: 64 MB per stream
 
 #### Multi-Stream Implementation
 
-**TX Side - Multiple Streams on Single Interface:**
+**TX Side - Multiple LED Panel Streams on Single Interface:**
 ```c
 // MTL TX API usage for multi-stream transmission on single NIC
 
@@ -901,7 +914,8 @@ struct st20_tx_ops tx_ops[3];
 for (int i = 0; i < 3; i++) {
     tx_ops[i].port.num_port = 1;
     tx_ops[i].port.port[0] = 0; // All use port 0
-    tx_ops[i].width = 960;
+    tx_ops[i].width = 640;     // LED panel width
+    tx_ops[i].height = 1080;    // LED panel height
     tx_ops[i].height = 540;
     tx_ops[i].fps = ST_FPS_P60;
     tx_ops[i].fmt = ST20_FMT_YUV_422_10BIT;
@@ -1037,9 +1051,9 @@ void composite_full_frame(struct frame_reconstruction_state* state,
 Network propagation: 0.1-1 ms (LAN)
 Packetization: 0.5-2 ms (depends on FPS)
 Reconstruction: 2-5 ms (software composite)
-Display: 16.7 ms (60fps vsync)
+Display buffering: 16-33 ms (30-60fps vsync)
 
-Total glass-to-glass: ~20-25 ms
+Total glass-to-glass: ~20-40 ms
 ```
 
 **Optimization Tips:**
@@ -1059,8 +1073,8 @@ Strategy 1: Forward Error Correction (FEC)
 - Recovers from up to 20% packet loss
 - Bandwidth cost: +0.08 Gbps per segment
 
-Strategy 2: Segment Priority
-- Mark ROI segments with higher QoS
+Strategy 2: Panel Priority
+- Mark critical LED panel streams with higher QoS
 - Use VLAN prioritization (802.1Q)
 - Ensure switch supports priority queues
 
@@ -1092,72 +1106,79 @@ if (missing_segments > threshold) {
 
 ## Quick Reference Tables
 
-### Single-NIC Multi-Stream Bandwidth (YUV 4:2:2 10-bit @ 60fps)
+### LED Panel Bandwidth (YUV 4:2:2 10-bit @ 30fps)
 
-**Single Intel I225 2.5GbE NIC Capacity**
+**Single Intel I225 2.5GbE NIC Capacity for LED Video Walls**
 
-| Segment Size | Per-Stream BW | Max Concurrent Streams | Total BW Used | Utilization | Use Case |
-|-------------|---------------|----------------------|---------------|-------------|----------|
-| **Full** | 1920×1080 | 2.98 Gbps | ❌ **0** (exceeds link) | - | Requires 10G or compression |
-| **Half** | 1920×540 | 1.49 Gbps | ✅ **1 stream** | 1.49 Gbps | 60% | ROI or half-frame |
-| **Quarter** | 960×540 | 0.75 Gbps | ✅ **3 streams** | 2.25 Gbps | 90% | **✅ Recommended** |
-| **One-Ninth** | 640×360 | 0.33 Gbps | ✅ **7 streams** | 2.31 Gbps | 92% | Multi-region |
-| **One-Sixteenth** | 480×270 | 0.19 Gbps | ✅ **13 streams** | 2.47 Gbps | 99% | Many small regions |
+| Panel Config | Per-Panel Resolution | Per-Panel BW | Max Panels | Total BW Used | Utilization | Application |
+|-------------|---------------------|--------------|------------|---------------|-------------|-------------|
+| **2-Panel Vertical** | 960×1080 | 0.75 Gbps | ✅ **3** | 2.25 Gbps | 90% | Dual ultrawide |
+| **3-Panel Vertical** | 640×1080 | 0.50 Gbps | ✅ **5** | 2.50 Gbps | 100% | **✅ Retail signage** |
+| **4-Panel Vertical** | 480×1080 | 0.37 Gbps | ✅ **6** | 2.22 Gbps | 89% | **✅ Command center** |
+| **2-Panel Horizontal** | 1920×540 | 0.75 Gbps | ✅ **3** | 2.25 Gbps | 90% | Tall portrait |
+| **3-Panel Horizontal** | 1920×360 | 0.50 Gbps | ✅ **5** | 2.50 Gbps | 100% | Vertical tower |
+| **5-Panel Horizontal** | 1920×216 | 0.30 Gbps | ✅ **8** | 2.40 Gbps | 96% | Multi-band ticker |
 
-**Recommended: 3× Quarter-frame streams @ 60fps (90% utilization, 10% headroom)**
-
----
-
-### Single-NIC Stream Combinations @ 60fps
-
-| Configuration | Stream 1 | Stream 2 | Stream 3 | Total BW | Utilization | Notes |
-|--------------|----------|----------|----------|----------|-------------|-------|
-| **3× Quarter** | 960×540 | 960×540 | 960×540 | 2.25 Gbps | 90% | ✅ Best balance |
-| **2× Quarter** | 960×540 | 960×540 | - | 1.49 Gbps | 60% | Room for other traffic |
-| **1× Half + 2× Ninth** | 1920×540 | 640×360 | 640×360 | 2.15 Gbps | 86% | Main + 2 ROI |
-| **7× Ninth** | 640×360 (×7) | - | - | 2.31 Gbps | 92% | Multi-camera grid |
-| **1× Quarter + 4× Ninth** | 960×540 | 640×360 (×4) | - | 2.07 Gbps | 83% | Main + 4 small |
+**Recommended: 3-panel or 4-panel vertical @ 30fps (60-90% utilization)**
 
 ---
 
-### Maximum Frame Rate per Segment (YUV 4:2:2 10-bit)
+### LED Panel Configuration Examples @ 30fps
 
-| Segment Size | Single Stream | 2× Streams | 4× Streams | 8× Streams |
-|-------------|---------------|------------|------------|------------|
-| **Half** | 120 fps | 60 fps | ❌ N/A | ❌ N/A |
-| **Quarter** | 200 fps | 100 fps | 60 fps | 30 fps |
-| **One-Ninth** | 454 fps | 227 fps | 113 fps | 57 fps |
-| **One-Sixteenth** | 789 fps | 395 fps | 197 fps | 98 fps |
+| Configuration | Panel Arrangement | Per-Panel Res | Panel Count | Total BW | Utilization | Use Case |
+|--------------|-------------------|---------------|-------------|----------|-------------|----------|
+| **Retail Ultrawide** | 3× Side-by-Side | 640×1080 | 3 | 1.50 Gbps | 60% | Store window display |
+| **Command Center** | 4× Side-by-Side | 480×1080 | 4 | 1.50 Gbps | 60% | NOC/SOC operations |
+| **Stadium Scoreboard** | 2× Side-by-Side | 960×1080 | 2 | 1.50 Gbps | 60% | Wide format scores |
+| **Building Facade** | 3× Stacked | 1920×360 | 3 | 1.50 Gbps | 60% | Elevator lobby tower |
+| **Conference Room** | 2× Stacked | 1920×540 | 2 | 1.50 Gbps | 60% | Split presentation |
+
+**Key Finding:** All standard LED configurations use exactly 60% bandwidth @ 30fps
 
 ---
 
-### Optimal Configurations for Common Scenarios
+### LED Panel Resolution Comparison @ 30fps (YUV 4:2:2 10-bit)
 
-| Scenario | Segment Size | Format | Bit Depth | FPS | Bandwidth | Notes |
+| Panel Type | Resolution | Bandwidth @ 30fps | Max Panels on 2.5G | Combined Display |
+|-----------|-----------|-------------------|-------------------|------------------|
+| **Full Frame** | 1920×1080 | 1.50 Gbps | ✅ **1** | 1920×1080 single display |
+| **Dual Vertical** | 960×1080 | 0.75 Gbps | ✅ **3** | 2880×1080 ultrawide |
+| **Triple Vertical** | 640×1080 | 0.50 Gbps | ✅ **5** | 3200×1080 ultra-ultrawide |
+| **Quad Vertical** | 480×1080 | 0.37 Gbps | ✅ **6** | 2880×1080 (4-panel) |
+| **Dual Horizontal** | 1920×540 | 0.75 Gbps | ✅ **3** | 1920×1620 tall portrait |
+| **Triple Horizontal** | 1920×360 | 0.50 Gbps | ✅ **5** | 1920×1800 vertical tower |
+
+---
+
+### Optimal LED Panel Formats by Application
+
+| Application | Panel Layout | Format | Bit Depth | FPS | Total BW | Notes |
 |----------|-------------|--------|-----------|-----|-----------|-------|
-| **Scoreboard overlay** | 640×180 | RGB | 10-bit | 60 | 0.25 Gbps | Sharp text |
-| **4-camera split** | 960×540 | YUV 4:2:2 | 10-bit | 50 | 2.48 Gbps | Fits 2.5G |
-| **Medical ROI** | 800×600 | RGB | 12-bit | 60 | 1.90 Gbps | True color |
-| **High-speed analysis** | 640×360 | YUV 4:2:2 | 10-bit | 240 | 1.32 Gbps | Ultra smooth |
-| **Face recognition** | 480×480 | YUV 4:2:2 | 10-bit | 60 | 0.43 Gbps | Biometric quality |
-| **Calibration patch** | 480×270 | RGB | 16-bit | 30 | 0.27 Gbps | Precision color |
+| **Retail signage** | 3× Vertical (640×1080) | YUV 4:2:2 | 10-bit | 30 | 1.50 Gbps | Broadcast quality |
+| **Command center** | 4× Vertical (480×1080) | YUV 4:2:2 | 10-bit | 30 | 1.50 Gbps | Dashboard graphics |
+| **Building facade** | 3× Horizontal (1920×360) | YUV 4:2:0 | 10-bit | 30 | 1.11 Gbps | Bandwidth efficient |
+| **LED calibration** | 3× Vertical (640×1080) | RGB | 10-bit | 30 | 2.25 Gbps | True color uniformity |
+| **Budget installs** | 5× Horizontal (1920×216) | YUV 4:2:0 | 8-bit | 30 | 0.90 Gbps | Maximum panel count |
+| **High-end graphics** | 2× Vertical (960×1080) | RGB | 12-bit | 30 | 2.70 Gbps | Premium quality ⚠️ |
+
+⚠️ = Exceeds 2.5G limit, requires lower frame rate or compression
 
 ---
 
-### Format Comparison @ Quarter Frame 960×540, 60fps
+### Format Comparison @ 640×1080 LED Panel, 30fps
 
 | Format | Bit Depth | Bandwidth | Quality | Best Use Case |
 |--------|-----------|-----------|---------|---------------|
-| YUV 4:2:0 8-bit | 8 | 0.45 Gbps | Good | Consumer content |
-| YUV 4:2:0 10-bit | 10 | 0.56 Gbps | Excellent | HDR, efficient |
-| YUV 4:2:2 8-bit | 8 | 0.60 Gbps | Very Good | Broadcast lite |
-| **YUV 4:2:2 10-bit** ★ | **10** | **0.75 Gbps** | **Excellent** | **ST2110 standard** |
-| YUV 4:2:2 12-bit | 12 | 0.90 Gbps | Premium | High-end mastering |
-| YUV 4:4:4 10-bit | 10 | 1.12 Gbps | Premium | VFX, keying |
-| RGB 10-bit | 10 | 1.12 Gbps | Premium | Graphics, CGI |
-| RGB 12-bit | 12 | 1.34 Gbps | Maximum | Medical, scientific |
+| YUV 4:2:0 8-bit | 8 | 0.37 Gbps | Good | Budget LED walls |
+| YUV 4:2:0 10-bit | 10 | 0.46 Gbps | Excellent | Efficient multi-panel |
+| YUV 4:2:2 8-bit | 8 | 0.50 Gbps | Very Good | Standard broadcast |
+| **YUV 4:2:2 10-bit** ★ | **10** | **0.50 Gbps** | **Excellent** | **ST2110 standard** |
+| YUV 4:2:2 12-bit | 12 | 0.75 Gbps | Premium | High-end installs |
+| YUV 4:4:4 10-bit | 10 | 0.75 Gbps | Premium | Graphics/text heavy |
+| RGB 10-bit | 10 | 0.75 Gbps | Premium | LED calibration |
+| RGB 12-bit | 12 | 1.00 Gbps | Maximum | Color-critical apps |
 
-★ = Recommended for broadcast compliance
+★ = Recommended for LED video walls (3 panels @ 1.50 Gbps total)
 
 ---
 
@@ -1210,13 +1231,18 @@ def segments_in_25g(segment_width, segment_height, fps,
     return max_segments, utilization
 
 # Example usage:
-# Quarter frame YUV 4:2:2 10-bit @ 60fps
-bw = calculate_segment_bandwidth(960, 540, 60, 'yuv422', 10)
-print(f"Bandwidth: {bw} Gbps")  # Output: 0.75 Gbps
+# 3-panel vertical LED wall: 640×1080 per panel, YUV 4:2:2 10-bit @ 30fps
+bw = calculate_segment_bandwidth(640, 1080, 30, 'yuv422', 10)
+print(f"Per-panel bandwidth: {bw} Gbps")  # Output: 0.50 Gbps
 
-segments, util = segments_in_25g(960, 540, 60, 'yuv422', 10)
-print(f"Max segments: {segments}, Utilization: {util:.1f}%")
-# Output: Max segments: 3, Utilization: 90.0%
+panels, util = segments_in_25g(640, 1080, 30, 'yuv422', 10)
+print(f"Max panels on 2.5G: {panels}, Utilization: {util:.1f}%")
+# Output: Max panels: 5, Utilization: 100.0%
+
+# For 3-panel @ 60% utilization:
+total_bw_3panel = bw * 3
+print(f"3-panel LED wall total: {total_bw_3panel} Gbps ({(total_bw_3panel/2.5)*100:.0f}% util)")
+# Output: 3-panel LED wall total: 1.50 Gbps (60% util)
 ```
 
 ---
@@ -1225,41 +1251,46 @@ print(f"Max segments: {segments}, Utilization: {util:.1f}%")
 
 ### Key Takeaways
 
-1. **Segmentation enables high-quality uncompressed video on 2.5G NICs:**
-   - Quarter-frame (960×540): 3× segments @ 60fps in ST2110 standard format
-   - One-ninth (640×360): 7× segments @ 60fps or 3× @ 120fps
-   - ROI transmission: Focus bandwidth on critical image areas
+1. **LED video walls are achievable with budget 2.5G NICs:**
+   - 3-panel vertical (640×1080 each): 1.50 Gbps @ 30fps (60% util) - Retail signage
+   - 4-panel vertical (480×1080 each): 1.50 Gbps @ 30fps (60% util) - Command center
+   - 3-panel horizontal (1920×360 each): 1.50 Gbps @ 30fps (60% util) - Building facades
+   - 2-panel arrangements: 1.50 Gbps @ 30fps (60% util) - Stadium scoreboards
+   - All configurations use exactly 60% bandwidth with 40% management headroom
 
-2. **Format flexibility increases with smaller segments:**
-   - Full YUV 4:4:4 and RGB support at 60fps with quarter-frames
-   - Ultra-high frame rates (200+ fps) possible with smaller segments
-   - True color accuracy (12-bit/16-bit) achievable for critical applications
+2. **Single-NIC multi-panel architecture:**
+   - One ST2110-20 stream per LED panel
+   - All panel feeds share same physical interface (single I225 NIC)
+   - Each LED controller subscribes to its specific multicast address
+   - PTP synchronization ensures seamless panel-to-panel tiling
+   - No centralized frame reconstruction needed
 
-3. **Practical applications:**
-   - Multi-camera coverage within single 2.5G link
-   - Region-of-interest for AI/ML processing
-   - High frame rate analysis for sports/research
-   - Medical imaging with diagnostic quality
-   - Broadcast graphics overlays
+3. **Practical LED video wall applications:**
+   - Retail ultrawide displays (3-panel side-by-side)
+   - Command center monitoring walls (4-panel wide)
+   - Building facade vertical towers (3-panel stacked)
+   - Sports stadium scoreboards (2-panel wide format)
+   - Conference room dual-height displays (2-panel stacked)
+   - LED panel calibration and uniformity testing
 
-4. **I225/I226 2.5GbE NICs are viable for professional uncompressed workflows** when using single-NIC multi-stream transmission with intelligent segmentation strategies
+4. **Intel I225/I226 2.5GbE NICs enable professional LED installations** at fraction of cost:
+   - Single $30-50 NIC vs $500+ multi-GPU setup
+   - Replace expensive 10G infrastructure with budget 2.5G
+   - Drive 2-6 LED panels from one network interface
+   - Broadcast-quality uncompressed ST2110-20 standard
 
-5. **Critical success factors:**
-   - Multiple ST2110-20 streams multiplexed on single interface
-   - Bandwidth budget management (total ≤ 2.5 Gbps)
-   - Precise PTP synchronization (prefer I226-V with TSN)
-   - Pixel-perfect boundary alignment
-   - Chroma subsampling awareness (even dimensions)
-   - Robust error handling and recovery
+5. **Critical success factors for LED video walls:**
+   - Vertical panel arrangements: Side-by-side strips for ultrawide displays
+   - Horizontal panel arrangements: Stacked strips for tall/tower displays
+   - YUV 4:2:2 10-bit recommended (ST2110 standard, 0.50 Gbps per 640×1080 panel)
+   - Precise PTP synchronization for seamless tiling (prefer I226-V with TSN)
+   - 60% bandwidth utilization provides 40% headroom for control traffic
+   - No grid segmentation or ROI patterns - only physical LED panel boundaries
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** February 23, 2026  
-**Author:** Media Transport Library Study Guide Series  
-**License:** BSD-3-Clause  
-
-**Related Documents:**
+**Document Version:** 2.0 (LED Video Wall Edition)  
+**Last Updated:** February 2026  
 - [Intel Ethernet Controllers Video Support Guide](intel_ethernet_controllers_video_support.md)
 - [MTL Pipeline Architecture Guide](mtl_pipeline_architecture_guide.md)
 - [ST2110 Best Practices](https://www.st2110.com/)
