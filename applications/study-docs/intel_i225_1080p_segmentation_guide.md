@@ -27,22 +27,78 @@ A full 1080p frame (1920×1080) using the ST2110-20 standard format (YUV 4:2:2 1
 - **@ 60fps:** 2.98 Gbps (exceeds 2.5G capacity)
 - **@ 30fps:** 1.50 Gbps (fits within 2.5G)
 
-### The Solution: Frame Segmentation
+### The Solution: Frame Segmentation with Multi-Port Parallel Transmission
 
-By dividing the 1080p frame into smaller segments (tiles), each segment requires proportionally less bandwidth, enabling:
-- ✅ **Higher frame rates** within 2.5G limits
-- ✅ **Better format options** (YUV 4:4:4, RGB at higher bit depths)
-- ✅ **Region of Interest (ROI)** transmission
-- ✅ **Multiple independent streams** from a single frame
+By dividing the 1080p frame into smaller segments (tiles) and transmitting them **simultaneously over multiple 2.5G ports**, you can:
+- ✅ **Transmit full 1080p60 YUV 4:2:2 10-bit** (ST2110 standard) using 4× 2.5G ports
+- ✅ **Achieve native resolution and frame rate** without compression
+- ✅ **Support better format options** (YUV 4:4:4, RGB at higher bit depths)
+- ✅ **Scale bandwidth** by adding more ports (4× 2.5G = 10Gbps effective)
+- ✅ **Maintain frame synchronization** across all segments
 
-### Key Principle
+### Key Principle: Parallel Transmission Architecture
 
-**Bandwidth scales linearly with pixel count:**
+**Bandwidth scales linearly with pixel count AND port count:**
 ```
 Segment_Bandwidth = Full_Frame_Bandwidth × (Segment_Pixels / Full_Frame_Pixels)
+Total_System_Bandwidth = Segment_Bandwidth × Number_of_Ports
 
-Example: 1/4 segment (960×540) = 1/4 the bandwidth (0.745 Gbps @ 60fps YUV 4:2:2 10-bit)
+Example: Full 1080p60 YUV 4:2:2 10-bit = 2.98 Gbps
+         Split into 4 segments (960×540 each) = 0.75 Gbps per segment
+         Transmit over 4× 2.5G ports simultaneously = 3.0 Gbps total ✅
+         Receiver reconstructs full 1920×1080 @ 60fps
 ```
+
+**Critical: All segments of a frame are transmitted SIMULTANEOUSLY**
+- Each segment goes to a different physical port (NIC or port on multi-port NIC)
+- Frame timing is synchronized across all ports using PTP
+- Receiver collects all segments with matching frame numbers
+- Full frame is reconstructed at native resolution and frame rate
+
+---
+
+## Multi-Port Transmission Architecture
+
+### Concept: Port-Per-Segment Design
+
+**Single Frame, Multiple Ports:**
+```
+Frame N @ 60fps (16.67ms interval)
+
+┌─────────────────────────────────────────┐
+│         TX: 4× Intel I225 NICs          │
+├──────────┬──────────┬──────────┬────────┤
+│  Port 1  │  Port 2  │  Port 3  │ Port 4 │
+│  Seg TL  │  Seg TR  │  Seg BL  │ Seg BR │
+│ (960×540)│ (960×540)│ (960×540)│(960×540)│
+└────┬─────┴────┬─────┴────┬─────┴────┬───┘
+     │          │          │          │
+     │ All transmitted SIMULTANEOUSLY
+     │ with Frame N timestamp
+     │          │          │          │
+     ▼          ▼          ▼          ▼
+┌────┴─────┬────┴─────┬────┴─────┬────┴───┐
+│  Port 1  │  Port 2  │  Port 3  │ Port 4 │
+│  Recv    │  Recv    │  Recv    │  Recv  │
+├──────────┴──────────┴──────────┴────────┤
+│    RX: Frame Reconstruction Engine      │
+│    Collects 4 segments with Frame N     │
+│    Composites into 1920×1080 frame      │
+│    Delivers @ 60fps to display          │
+└─────────────────────────────────────────┘
+```
+
+**Timing Requirements:**
+- All segments MUST have identical frame number
+- All segments MUST have identical PTP timestamp (within ±1µs)
+- Network switches MUST preserve frame order per-port
+- Receiver MUST buffer until all segments arrive
+
+**Benefits vs Single Port:**
+- ✅ Native resolution (1920×1080, not 960×540)
+- ✅ Native frame rate (60fps, not limited by single port)
+- ✅ No compression needed
+- ✅ Linear bandwidth scaling (4 ports = 4× bandwidth)
 
 ---
 
@@ -181,7 +237,14 @@ Bandwidth = Width × Height × FPS × 20 bpp × 1.10 overhead / 1,000,000,000
 | 60 fps | 31,104,000 | 0.75 Gbps | 2.5 Gbps | ✅ **3** segments |
 | 120 fps | 62,208,000 | 1.49 Gbps | 2.5 Gbps | ✅ **1** segment |
 
-**Key Finding:** Can transmit 3× quarter-frame segments @ 60fps within 2.5G!
+**Multi-Port Scenarios:**
+- **4× 2.5G ports (total 10G effective):** Full 1080p60 YUV 4:2:2 10-bit ✅
+  - Each port carries 1 segment @ 0.75 Gbps
+  - Receiver reconstructs full 1920×1080 @ 60fps
+- **2× 2.5G ports (total 5G effective):** 2 segments for 1920×540 @ 60fps
+  - Each port carries half-frame horizontal split
+  - Receiver reconstructs full 1920×1080 @ 60fps
+- **Single 2.5G port:** 1 segment for ROI or lower FPS applications
 
 ---
 
@@ -398,28 +461,64 @@ Bandwidth = Width × Height × FPS × 20 bpp × 1.10 overhead / 1,000,000,000
 
 ---
 
-### Use Case 2: Multi-Camera PTZ Follow
+### Use Case 2: Full 1080p60 Transmission with 4× I225 NICs
 
-**Scenario:** Stadium coverage with 4 region specialists
+**Scenario:** Production-quality 1080p60 YUV 4:2:2 10-bit (ST2110 standard) over 2.5G infrastructure
 
-**Configuration:**
+**Multi-Port Configuration:**
 ```
-┌─────────┬─────────┐
-│ Camera1 │ Camera2 │  Each: 960×540 @ 60fps
-│ (TL)    │ (TR)    │  Format: YUV 4:2:2 10-bit
-├─────────┼─────────┤  Total: 3.0 Gbps (4× 0.75 Gbps)
-│ Camera3 │ Camera4 │
-│ (BL)    │ (BR)    │  ⚠️ Slightly over 2.5G
-└─────────┴─────────┘
+Camera/Source: 1920×1080 @ 60fps YUV 4:2:2 10-bit
 
-Solution: Use 50fps instead of 60fps
-         4× 0.62 Gbps = 2.48 Gbps ✅
+         ┌──────────────────┐
+         │  Segmentation    │
+         │     Engine       │
+         └────────┬─────────┘
+                  │
+         ┌────────┴─────────┐
+         │  4 Segments      │
+         │  960×540 each    │
+         └──┬──┬──┬──┬──────┘
+            │  │  │  │
+    ┌───────┘  │  │  └────────┐
+    │  ┌───────┘  └────────┐  │
+    │  │                   │  │
+    ▼  ▼                   ▼  ▼
+┌────┴──┴──┬──────────┬───┴──┴────┐
+│ Port 1   │ Port 2   │ Port 3   │ Port 4
+│ I225 NIC │ I225 NIC │ I225 NIC │ I225 NIC
+│ 2.5G     │ 2.5G     │ 2.5G     │ 2.5G
+│ 0.75Gbps │ 0.75Gbps │ 0.75Gbps │ 0.75Gbps
+└────┬─────┴────┬─────┴────┬─────┴────┬───┘
+     │          │          │          │
+     │   Simultaneous Transmission    │
+     │   (Frame N @ 60fps)           │
+     │          │          │          │
+     ▼          ▼          ▼          ▼
+┌────┴─────┬────┴─────┬────┴─────┬────┴───┐
+│ Port 1   │ Port 2   │ Port 3   │ Port 4 │
+│ I225 RX  │ I225 RX  │ I225 RX  │ I225 RX│
+└────┬─────┴────┬─────┴────┬─────┴────┬───┘
+     │          │          │          │
+     └──────────┴──────┬───┴──────────┘
+                       │
+              ┌────────▼─────────┐
+              │ Reconstruction   │
+              │ 1920×1080@60fps  │
+              └──────────────────┘
 ```
+
+**System Bandwidth:**
+- Per segment: 0.75 Gbps
+- Total (4 ports): 3.0 Gbps
+- Per-port utilization: 30% (plenty of headroom)
+- Result: Full 1080p60 ST2110 standard ✅
 
 **Benefits:**
-- Full coverage with smooth motion
-- Independent camera control
-- Switch between regions seamlessly
+- ✅ Native 1920×1080 resolution (not quarter-frame)
+- ✅ Native 60fps frame rate
+- ✅ ST2110-20 standard compliance
+- ✅ Low per-port utilization (reliable transmission)
+- ✅ Cost-effective vs single 10G NIC
 
 ---
 
@@ -607,18 +706,188 @@ Total recommended: 64 MB per stream
 
 ---
 
-### 4. MTL Configuration for Segmented Streams
+### 4. MTL Multi-Port Configuration
 
-**Sample Configuration (4 segments, 960×540 each):**
+#### MTL Multi-Port TX/RX Support
+
+**MTL supports parallel transmission across multiple interfaces:**
+- ✅ Multiple TX sessions on different physical ports
+- ✅ Independent PTP synchronization per interface or shared PTP domain
+- ✅ Frame-level synchronization across sessions
+- ✅ Automatic load balancing with RSS (Receive Side Scaling)
+
+**Capabilities:**
+```c
+// MTL supports up to 8 interfaces simultaneously
+#define MTL_MAX_PORTS 8
+
+// Each interface can have multiple TX/RX sessions
+// Typical: 1 session per segment per interface
+
+// Frame synchronization:
+// - Use identical frame numbers across all TX sessions
+// - Use identical PTP timestamps (same epoch)
+// - Specify segment metadata (x_offset, y_offset)
+```
+
+---
+
+#### Sample Configuration: 4-Port Parallel TX (Full 1080p60)
+
+**Scenario:** Transmit 1080p60 YUV 4:2:2 10-bit using 4× I225 NICs
+
+**TX Configuration (Sender with 4× I225 NICs):**
 ```json
 {
-  "interfaces": [{
-    "name": "enp1s0f0",
-    "ip": "192.168.1.101"
-  }],
+  "interfaces": [
+    {
+      "name": "enp1s0f0",
+      "ip": "192.168.1.101",
+      "port": "2.5G",
+      "ptp_master": true
+    },
+    {
+      "name": "enp2s0f0",
+      "ip": "192.168.1.102",
+      "port": "2.5G",
+      "ptp_slave": "enp1s0f0"
+    },
+    {
+      "name": "enp3s0f0",
+      "ip": "192.168.1.103",
+      "port": "2.5G",
+      "ptp_slave": "enp1s0f0"
+    },
+    {
+      "name": "enp4s0f0",
+      "ip": "192.168.1.104",
+      "port": "2.5G",
+      "ptp_slave": "enp1s0f0"
+    }
+  ],
+  "tx_sessions": [
+    {
+      "type": "st20",
+      "interface": "enp1s0f0",
+      "ip": "239.1.1.1",
+      "port": 20000,
+      "payload_type": 112,
+      "width": 960,
+      "height": 540,
+      "fps": "p60",
+      "fmt": "YUV422_10bit",
+      "name": "segment_tl",
+      "frame_sync": true,
+      "metadata": {
+        "full_frame_width": 1920,
+        "full_frame_height": 1080,
+        "segment_id": 1,
+        "x_offset": 0,
+        "y_offset": 0,
+        "total_segments": 4
+      }
+    },
+    {
+      "type": "st20",
+      "interface": "enp2s0f0",
+      "ip": "239.1.1.2",
+      "port": 20000,
+      "payload_type": 112,
+      "width": 960,
+      "height": 540,
+      "fps": "p60",
+      "fmt": "YUV422_10bit",
+      "name": "segment_tr",
+      "frame_sync": true,
+      "metadata": {
+        "full_frame_width": 1920,
+        "full_frame_height": 1080,
+        "segment_id": 2,
+        "x_offset": 960,
+        "y_offset": 0,
+        "total_segments": 4
+      }
+    },
+    {
+      "type": "st20",
+      "interface": "enp3s0f0",
+      "ip": "239.1.1.3",
+      "port": 20000,
+      "payload_type": 112,
+      "width": 960,
+      "height": 540,
+      "fps": "p60",
+      "fmt": "YUV422_10bit",
+      "name": "segment_bl",
+      "frame_sync": true,
+      "metadata": {
+        "full_frame_width": 1920,
+        "full_frame_height": 1080,
+        "segment_id": 3,
+        "x_offset": 0,
+        "y_offset": 540,
+        "total_segments": 4
+      }
+    },
+    {
+      "type": "st20",
+      "interface": "enp4s0f0",
+      "ip": "239.1.1.4",
+      "port": 20000,
+      "payload_type": 112,
+      "width": 960,
+      "height": 540,
+      "fps": "p60",
+      "fmt": "YUV422_10bit",
+      "name": "segment_br",
+      "frame_sync": true,
+      "metadata": {
+        "full_frame_width": 1920,
+        "full_frame_height": 1080,
+        "segment_id": 4,
+        "x_offset": 960,
+        "y_offset": 540,
+        "total_segments": 4
+      }
+    }
+  ],
+  "frame_sync_config": {
+    "mode": "strict",
+    "max_frame_drift": 1,
+    "sync_source": "ptp"
+  }
+}
+```
+
+**RX Configuration (Receiver with 4× I225 NICs):**
+```json
+{
+  "interfaces": [
+    {
+      "name": "enp1s0f0",
+      "ip": "192.168.1.201",
+      "port": "2.5G"
+    },
+    {
+      "name": "enp2s0f0",
+      "ip": "192.168.1.202",
+      "port": "2.5G"
+    },
+    {
+      "name": "enp3s0f0",
+      "ip": "192.168.1.203",
+      "port": "2.5G"
+    },
+    {
+      "name": "enp4s0f0",
+      "ip": "192.168.1.204",
+      "port": "2.5G"
+    }
+  ],
   "rx_sessions": [
     {
       "type": "st20",
+      "interface": "enp1s0f0",
       "ip": "239.1.1.1",
       "port": 20000,
       "payload_type": 112,
@@ -635,6 +904,7 @@ Total recommended: 64 MB per stream
     },
     {
       "type": "st20",
+      "interface": "enp2s0f0",
       "ip": "239.1.1.2",
       "port": 20000,
       "payload_type": 112,
@@ -651,6 +921,7 @@ Total recommended: 64 MB per stream
     },
     {
       "type": "st20",
+      "interface": "enp3s0f0",
       "ip": "239.1.1.3",
       "port": 20000,
       "payload_type": 112,
@@ -667,6 +938,7 @@ Total recommended: 64 MB per stream
     },
     {
       "type": "st20",
+      "interface": "enp4s0f0",
       "ip": "239.1.1.4",
       "port": 20000,
       "payload_type": 112,
@@ -681,7 +953,166 @@ Total recommended: 64 MB per stream
         "y_offset": 540
       }
     }
-  ]
+  ],
+  "frame_reconstruction_config": {
+    "mode": "parallel_segments",
+    "output_resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "output_fps": "p60",
+    "wait_all_segments": true,
+    "max_wait_time_us": 1000,
+    "drop_incomplete_frames": true
+  }
+}
+```
+
+---
+
+#### Frame Synchronization Implementation
+
+**TX Side - Ensure Simultaneous Transmission:**
+```c
+// MTL TX API usage for frame-synchronized multi-port transmission
+
+struct mtl_init_params init_params = {0};
+init_params.num_ports = 4;
+init_params.ptp_systime_sync = true; // Critical for sync
+
+// Initialize MTL with 4 interfaces
+mtl_handle mtl = mtl_init(&init_params);
+
+// Create 4 TX sessions (one per segment/port)
+struct st20_tx_ops tx_ops[4];
+for (int i = 0; i < 4; i++) {
+    tx_ops[i].port.num_port = 1;
+    tx_ops[i].port.port[0] = i; // Port 0, 1, 2, 3
+    tx_ops[i].width = 960;
+    tx_ops[i].height = 540;
+    tx_ops[i].fps = ST_FPS_P60;
+    tx_ops[i].fmt = ST20_FMT_YUV_422_10BIT;
+    tx_ops[i].framebuff_cnt = 3;
+    
+    // Enable frame sync
+    tx_ops[i].flags |= ST20_TX_FLAG_ENABLE_VSYNC;
+    tx_ops[i].flags |= ST20_TX_FLAG_USER_PACING;
+    
+    tx_handles[i] = st20_tx_create(mtl, &tx_ops[i]);
+}
+
+// Transmission loop - send all segments of frame N simultaneously
+while (running) {
+    uint64_t frame_time = get_ptp_time(); // Get current PTP time
+    uint32_t frame_number = frame_counter++;
+    
+    // Get all 4 segment buffers for this frame
+    for (int i = 0; i < 4; i++) {
+        segment_bufs[i] = st20_tx_get_framebuffer(tx_handles[i], frame_number);
+        
+        // Copy segment data (from full frame to segment buffer)
+        copy_frame_segment(full_frame, segment_bufs[i], i, 
+                          960, 540, 1920, 1080);
+        
+        // Set identical timestamp for all segments
+        st20_tx_set_framebuffer_timestamp(tx_handles[i], segment_bufs[i], 
+                                         frame_time);
+    }
+    
+    // Transmit ALL segments simultaneously (blocking until frame time)
+    for (int i = 0; i < 4; i++) {
+        st20_tx_put_framebuffer(tx_handles[i], segment_bufs[i]);
+    }
+    
+    // All segments sent with frame_number and frame_time
+    // Network delivers them in parallel
+}
+```
+
+**RX Side - Collect and Reconstruct:**
+```c
+// MTL RX API usage for parallel segment reception
+
+struct mtl_init_params init_params = {0};
+init_params.num_ports = 4;
+
+mtl_handle mtl = mtl_init(&init_params);
+
+// Create 4 RX sessions (one per segment/port)
+struct st20_rx_ops rx_ops[4];
+for (int i = 0; i < 4; i++) {
+    rx_ops[i].port.num_port = 1;
+    rx_ops[i].port.port[0] = i; // Port 0, 1, 2, 3
+    rx_ops[i].width = 960;
+    rx_ops[i].height = 540;
+    rx_ops[i].fps = ST_FPS_P60;
+    rx_ops[i].fmt = ST20_FMT_YUV_422_10BIT;
+    rx_ops[i].notify_frame_ready = segment_frame_ready_callback;
+    rx_ops[i].priv = &segment_context[i];
+    
+    rx_handles[i] = st20_rx_create(mtl, &rx_ops[i]);
+}
+
+// Reconstruction engine
+struct frame_reconstruction_state {
+    uint32_t frame_number;
+    uint64_t frame_timestamp;
+    void* segment_buffers[4];
+    bool segment_received[4];
+    int segments_count;
+};
+
+void segment_frame_ready_callback(void* priv) {
+    struct segment_context* ctx = (struct segment_context*)priv;
+    int segment_id = ctx->segment_id;
+    
+    // Get received segment
+    void* segment_buf = st20_rx_get_framebuffer(rx_handles[segment_id]);
+    uint32_t frame_num = st20_rx_get_frame_number(segment_buf);
+    uint64_t timestamp = st20_rx_get_timestamp(segment_buf);
+    
+    // Add to reconstruction queue
+    struct frame_reconstruction_state* frame_state = 
+        get_or_create_frame_state(frame_num);
+    
+    frame_state->segment_buffers[segment_id] = segment_buf;
+    frame_state->segment_received[segment_id] = true;
+    frame_state->segments_count++;
+    frame_state->frame_timestamp = timestamp;
+    
+    // Check if all segments received
+    if (frame_state->segments_count == 4) {
+        // All segments for this frame arrived!
+        composite_full_frame(frame_state, output_buffer);
+        deliver_frame(output_buffer, frame_num, timestamp);
+        
+        // Release all segment buffers
+        for (int i = 0; i < 4; i++) {
+            st20_rx_put_framebuffer(rx_handles[i], 
+                                  frame_state->segment_buffers[i]);
+        }
+        
+        free_frame_state(frame_state);
+    }
+}
+
+void composite_full_frame(struct frame_reconstruction_state* state,
+                         void* output_1920x1080) {
+    // Copy segment_tl (0,0) -> (0,0)
+    copy_segment_to_frame(state->segment_buffers[0], output_1920x1080,
+                         0, 0, 960, 540, 1920, 1080);
+    
+    // Copy segment_tr (960,0) -> (960,0)
+    copy_segment_to_frame(state->segment_buffers[1], output_1920x1080,
+                         960, 0, 960, 540, 1920, 1080);
+    
+    // Copy segment_bl (0,540) -> (0,540)
+    copy_segment_to_frame(state->segment_buffers[2], output_1920x1080,
+                         0, 540, 960, 540, 1920, 1080);
+    
+    // Copy segment_br (960,540) -> (960,540)
+    copy_segment_to_frame(state->segment_buffers[3], output_1920x1080,
+                         960, 540, 960, 540, 1920, 1080);
 }
 ```
 
@@ -749,15 +1180,29 @@ if (missing_segments > threshold) {
 
 ## Quick Reference Tables
 
+### Multi-Port System Bandwidth (YUV 4:2:2 10-bit @ 60fps)
+
+**Goal: Transmit Full 1920×1080 @ 60fps = 2.98 Gbps**
+
+| Ports | Segment Size | Bandwidth/Port | Total Bandwidth | Full Frame? |
+|-------|-------------|----------------|-----------------|-------------|
+| **4× 2.5G** | **960×540** | **0.75 Gbps** | **3.0 Gbps** | **✅ Yes (10G effective)** |
+| **2× 2.5G** | 1920×540 | 1.49 Gbps | 2.98 Gbps | ✅ Yes (5G effective) |
+| **1× 2.5G** | 1920×1080 | 2.98 Gbps | 2.98 Gbps | ❌ No (exceeds single port) |
+
+**Recommended: 4× 2.5G ports for best reliability (30% utilization per port)**
+
+---
+
 ### Bandwidth per Segment @ 60fps (YUV 4:2:2 10-bit)
 
-| Segment Size | Resolution | Bandwidth | Segments in 2.5G |
-|-------------|-----------|-----------|------------------|
-| **Full** | 1920×1080 | 2.98 Gbps | ❌ 0 (exceeds) |
-| **Half** | 1920×540 | 1.49 Gbps | ✅ 1 |
-| **Quarter** | 960×540 | 0.75 Gbps | ✅ 3 |
-| **One-Ninth** | 640×360 | 0.33 Gbps | ✅ 7 |
-| **One-Sixteenth** | 480×270 | 0.19 Gbps | ✅ 13 |
+| Segment Size | Resolution | Bandwidth | Ports Needed for Full Frame |
+|-------------|-----------|-----------|-----------------------------|
+| **Full** | 1920×1080 | 2.98 Gbps | 2 ports (1.49 Gbps each) |
+| **Half** | 1920×540 | 1.49 Gbps | 2 ports (0.75 Gbps each) |
+| **Quarter** | 960×540 | 0.75 Gbps | 4 ports ✅ Recommended |
+| **One-Ninth** | 640×360 | 0.33 Gbps | 9 ports (overkill) |
+| **One-Sixteenth** | 480×270 | 0.19 Gbps | 16 ports (impractical) |
 
 ---
 
