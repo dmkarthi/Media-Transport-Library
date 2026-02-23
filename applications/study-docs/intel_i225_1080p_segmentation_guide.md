@@ -2,7 +2,7 @@
 
 **Date:** February 23, 2026  
 **Repository:** OpenVisualCloud/Media-Transport-Library  
-**Purpose:** Guide for transmitting segmented 1080p uncompressed video within 2.5G bandwidth constraints
+**Purpose:** Guide for transmitting multiple segmented 1080p uncompressed video streams over a single 2.5G NIC using multi-stream architecture
 
 ---
 
@@ -27,78 +27,74 @@ A full 1080p frame (1920×1080) using the ST2110-20 standard format (YUV 4:2:2 1
 - **@ 60fps:** 2.98 Gbps (exceeds 2.5G capacity)
 - **@ 30fps:** 1.50 Gbps (fits within 2.5G)
 
-### The Solution: Frame Segmentation with Multi-Port Parallel Transmission
+### The Solution: Frame Segmentation with Multi-Stream Transmission
 
-By dividing the 1080p frame into smaller segments (tiles) and transmitting them **simultaneously over multiple 2.5G ports**, you can:
-- ✅ **Transmit full 1080p60 YUV 4:2:2 10-bit** (ST2110 standard) using 4× 2.5G ports
-- ✅ **Achieve native resolution and frame rate** without compression
-- ✅ **Support better format options** (YUV 4:4:4, RGB at higher bit depths)
-- ✅ **Scale bandwidth** by adding more ports (4× 2.5G = 10Gbps effective)
-- ✅ **Maintain frame synchronization** across all segments
+By dividing the 1080p frame into smaller segments (tiles) and transmitting them as **multiple ST2110 streams over a single 2.5G interface**, you can:
+- ✅ **Maximize 2.5G bandwidth utilization** with multiple concurrent streams
+- ✅ **Support various segment combinations** (ROI, quad-split, etc.)
+- ✅ **Enable flexible format options** based on segment size
+- ✅ **Leverage standard ST2110-20** compliance per stream
+- ✅ **Simplify hardware requirements** (single NIC)
 
-### Key Principle: Parallel Transmission Architecture
+### Key Principle: Multiplexed Stream Architecture
 
-**Bandwidth scales linearly with pixel count AND port count:**
+**Bandwidth scales linearly with pixel count:**
 ```
 Segment_Bandwidth = Full_Frame_Bandwidth × (Segment_Pixels / Full_Frame_Pixels)
-Total_System_Bandwidth = Segment_Bandwidth × Number_of_Ports
 
-Example: Full 1080p60 YUV 4:2:2 10-bit = 2.98 Gbps
-         Split into 4 segments (960×540 each) = 0.75 Gbps per segment
-         Transmit over 4× 2.5G ports simultaneously = 3.0 Gbps total ✅
-         Receiver reconstructs full 1920×1080 @ 60fps
+Example: Full 1080p60 YUV 4:2:2 10-bit = 2.98 Gbps (exceeds 2.5G)
+         Quarter segment (960×540) = 0.75 Gbps per segment
+         Single 2.5G NIC can carry 3× quarter segments simultaneously ✅
+         OR 1× quarter segment @ higher FPS (200fps)
+         OR mixed resolutions/formats within 2.5G budget
 ```
 
-**Critical: All segments of a frame are transmitted SIMULTANEOUSLY**
-- Each segment goes to a different physical port (NIC or port on multi-port NIC)
-- Frame timing is synchronized across all ports using PTP
-- Receiver collects all segments with matching frame numbers
-- Full frame is reconstructed at native resolution and frame rate
+**All segments share the same physical interface:**
+- Multiple RTP streams with different multicast addresses
+- Each stream is an independent ST2110-20 flow
+- Streams are packet-interleaved at the NIC hardware level
+- Total bandwidth constrained to 2.5 Gbps link capacity
+- Receiver subscribes to relevant multicast groups for desired segments
 
 ---
 
-## Multi-Port Transmission Architecture
+## Single-NIC Multi-Stream Architecture
 
-### Concept: Port-Per-Segment Design
+### Concept: Stream-Per-Segment Design
 
-**Single Frame, Multiple Ports:**
+**Multiple Streams, Single Interface:**
 ```
-Frame N @ 60fps (16.67ms interval)
+Single Intel I225 NIC (2.5 Gbps total)
+│
+├─── Stream 1 (239.1.1.1:20000) → Segment 1 @ 0.75 Gbps
+├─── Stream 2 (239.1.1.2:20000) → Segment 2 @ 0.75 Gbps  
+├─── Stream 3 (239.1.1.3:20000) → Segment 3 @ 0.75 Gbps
+└─── (Total: 2.25 Gbps, 90% utilization) ✅
 
-┌─────────────────────────────────────────┐
-│         TX: 4× Intel I225 NICs          │
-├──────────┬──────────┬──────────┬────────┤
-│  Port 1  │  Port 2  │  Port 3  │ Port 4 │
-│  Seg TL  │  Seg TR  │  Seg BL  │ Seg BR │
-│ (960×540)│ (960×540)│ (960×540)│(960×540)│
-└────┬─────┴────┬─────┴────┬─────┴────┬───┘
-     │          │          │          │
-     │ All transmitted SIMULTANEOUSLY
-     │ with Frame N timestamp
-     │          │          │          │
-     ▼          ▼          ▼          ▼
-┌────┴─────┬────┴─────┬────┴─────┬────┴───┐
-│  Port 1  │  Port 2  │  Port 3  │ Port 4 │
-│  Recv    │  Recv    │  Recv    │  Recv  │
-├──────────┴──────────┴──────────┴────────┤
-│    RX: Frame Reconstruction Engine      │
-│    Collects 4 segments with Frame N     │
-│    Composites into 1920×1080 frame      │
-│    Delivers @ 60fps to display          │
-└─────────────────────────────────────────┘
+Packets from all streams are interleaved on the wire:
+[S1-pkt][S2-pkt][S3-pkt][S1-pkt][S2-pkt][S3-pkt]...
+
+Receiver Side:
+├─── Subscribes to multicast 239.1.1.1 → Receives Stream 1
+├─── Subscribes to multicast 239.1.1.2 → Receives Stream 2  
+└─── Subscribes to multicast 239.1.1.3 → Receives Stream 3
+
+Optional: Frame reconstruction if segments form complete frame
 ```
 
-**Timing Requirements:**
-- All segments MUST have identical frame number
-- All segments MUST have identical PTP timestamp (within ±1µs)
-- Network switches MUST preserve frame order per-port
-- Receiver MUST buffer until all segments arrive
+**Key Characteristics:**
+- Each segment is an independent ST2110-20 RTP stream
+- Unique multicast group per stream
+- NIC hardware handles packet multiplexing automatically
+- Total bandwidth <= 2.5 Gbps (hard limit)
+- No timing synchronization required between streams (unless reconstructing)
 
-**Benefits vs Single Port:**
-- ✅ Native resolution (1920×1080, not 960×540)
-- ✅ Native frame rate (60fps, not limited by single port)
-- ✅ No compression needed
-- ✅ Linear bandwidth scaling (4 ports = 4× bandwidth)
+**Benefits of Single-NIC Approach:**
+- ✅ Lower hardware cost (one NIC vs multiple)
+- ✅ Simplified network topology
+- ✅ Standard ST2110-20 per stream
+- ✅ Flexible receiver-side stream selection
+- ✅ Each stream can be independently consumed
 
 ---
 
@@ -237,14 +233,18 @@ Bandwidth = Width × Height × FPS × 20 bpp × 1.10 overhead / 1,000,000,000
 | 60 fps | 31,104,000 | 0.75 Gbps | 2.5 Gbps | ✅ **3** segments |
 | 120 fps | 62,208,000 | 1.49 Gbps | 2.5 Gbps | ✅ **1** segment |
 
-**Multi-Port Scenarios:**
-- **4× 2.5G ports (total 10G effective):** Full 1080p60 YUV 4:2:2 10-bit ✅
-  - Each port carries 1 segment @ 0.75 Gbps
-  - Receiver reconstructs full 1920×1080 @ 60fps
-- **2× 2.5G ports (total 5G effective):** 2 segments for 1920×540 @ 60fps
-  - Each port carries half-frame horizontal split
-  - Receiver reconstructs full 1920×1080 @ 60fps
-- **Single 2.5G port:** 1 segment for ROI or lower FPS applications
+**Single-NIC Stream Scenarios:**
+- **Single 2.5G port with 3× streams:** 3× quarter segments @ 60fps ✅
+  - Each stream @ 0.75 Gbps
+  - Total: 2.25 Gbps (90% utilization)
+  - Use case: Triple ROI, or 3/4 of full frame coverage
+- **Single 2.5G port with 1× stream:** 1× quarter segment @ 200fps
+  - Single stream @ 2.49 Gbps (99.6% utilization)
+  - Use case: High-speed capture of specific region
+- **Single 2.5G port with 7× streams:** 7× one-ninth segments @ 60fps
+  - Each stream @ 0.33 Gbps
+  - Total: 2.31 Gbps (92% utilization)
+  - Use case: Multi-region monitoring
 
 ---
 
@@ -461,64 +461,62 @@ Bandwidth = Width × Height × FPS × 20 bpp × 1.10 overhead / 1,000,000,000
 
 ---
 
-### Use Case 2: Full 1080p60 Transmission with 4× I225 NICs
+### Use Case 2: Triple-Stream ROI Monitoring
 
-**Scenario:** Production-quality 1080p60 YUV 4:2:2 10-bit (ST2110 standard) over 2.5G infrastructure
+**Scenario:** Security/surveillance with 3 regions of interest on single I225 NIC
 
-**Multi-Port Configuration:**
+**Single-NIC Multi-Stream Configuration:**
 ```
 Camera/Source: 1920×1080 @ 60fps YUV 4:2:2 10-bit
 
          ┌──────────────────┐
-         │  Segmentation    │
-         │     Engine       │
+         │  ROI Selection   │
+         │  & Crop Engine   │
          └────────┬─────────┘
                   │
          ┌────────┴─────────┐
-         │  4 Segments      │
+         │  3 ROI Streams   │
          │  960×540 each    │
-         └──┬──┬──┬──┬──────┘
-            │  │  │  │
-    ┌───────┘  │  │  └────────┐
-    │  ┌───────┘  └────────┐  │
-    │  │                   │  │
-    ▼  ▼                   ▼  ▼
-┌────┴──┴──┬──────────┬───┴──┴────┐
-│ Port 1   │ Port 2   │ Port 3   │ Port 4
-│ I225 NIC │ I225 NIC │ I225 NIC │ I225 NIC
-│ 2.5G     │ 2.5G     │ 2.5G     │ 2.5G
-│ 0.75Gbps │ 0.75Gbps │ 0.75Gbps │ 0.75Gbps
-└────┬─────┴────┬─────┴────┬─────┴────┬───┘
-     │          │          │          │
-     │   Simultaneous Transmission    │
-     │   (Frame N @ 60fps)           │
-     │          │          │          │
-     ▼          ▼          ▼          ▼
-┌────┴─────┬────┴─────┬────┴─────┬────┴───┐
-│ Port 1   │ Port 2   │ Port 3   │ Port 4 │
-│ I225 RX  │ I225 RX  │ I225 RX  │ I225 RX│
-└────┬─────┴────┬─────┴────┬─────┴────┬───┘
-     │          │          │          │
-     └──────────┴──────┬───┴──────────┘
-                       │
-              ┌────────▼─────────┐
-              │ Reconstruction   │
-              │ 1920×1080@60fps  │
-              └──────────────────┘
+         └──────┬───────────┘
+                │
+    ┌───────────┼───────────┐
+    │           │           │
+    ▼           ▼           ▼
+┌───┴───────────┴───────────┴────┐
+│   Single Intel I225 2.5GbE NIC │
+│                                 │
+│  Stream 1: 239.1.1.1 (0.75Gb)  │
+│  Stream 2: 239.1.1.2 (0.75Gb)  │
+│  Stream 3: 239.1.1.3 (0.75Gb)  │
+│  ────────────────────────────  │
+│  Total: 2.25 Gbps (90% util)   │
+└────────────┬────────────────────┘
+             │
+        IP Network
+             │
+   ┌─────────┼─────────┐
+   │         │         │
+   ▼         ▼         ▼
+┌──┴─────────┴─────────┴──┐
+│  Receiver: Single I225  │
+│  Subscribe to relevant  │
+│  multicast groups       │
+│  (1, 2, 3, or all)      │
+└─────────────────────────┘
 ```
 
 **System Bandwidth:**
-- Per segment: 0.75 Gbps
-- Total (4 ports): 3.0 Gbps
-- Per-port utilization: 30% (plenty of headroom)
-- Result: Full 1080p60 ST2110 standard ✅
+- Per stream: 0.75 Gbps
+- Total (3 streams): 2.25 Gbps
+- Link utilization: 90%
+- Result: 3× independent ST2110 streams ✅
 
 **Benefits:**
-- ✅ Native 1920×1080 resolution (not quarter-frame)
-- ✅ Native 60fps frame rate
-- ✅ ST2110-20 standard compliance
-- ✅ Low per-port utilization (reliable transmission)
-- ✅ Cost-effective vs single 10G NIC
+- ✅ Single NIC hardware (low cost)
+- ✅ Each stream independently selectable
+- ✅ Flexible receiver subscription
+- ✅ Standard ST2110-20 per stream
+- ✅ 10% headroom for management traffic
 
 ---
 
@@ -706,37 +704,36 @@ Total recommended: 64 MB per stream
 
 ---
 
-### 4. MTL Multi-Port Configuration
+### 4. MTL Single-NIC Multi-Stream Configuration
 
-#### MTL Multi-Port TX/RX Support
+#### MTL Multi-Session on Single Interface
 
-**MTL supports parallel transmission across multiple interfaces:**
-- ✅ Multiple TX sessions on different physical ports
-- ✅ Independent PTP synchronization per interface or shared PTP domain
-- ✅ Frame-level synchronization across sessions
-- ✅ Automatic load balancing with RSS (Receive Side Scaling)
+**MTL supports multiple TX/RX sessions on the same physical interface:**
+- ✅ Multiple TX sessions sharing one NIC
+- ✅ Each session = independent ST2110-20 RTP stream
+- ✅ Hardware packet interleaving automatic
+- ✅ Total bandwidth constrained by link speed (2.5G)
 
 **Capabilities:**
 ```c
-// MTL supports up to 8 interfaces simultaneously
-#define MTL_MAX_PORTS 8
+// Single interface with multiple sessions
+// Each session has unique multicast destination
 
-// Each interface can have multiple TX/RX sessions
-// Typical: 1 session per segment per interface
+// Bandwidth management:
+// - Sum of all session bandwidths <= 2.5 Gbps
+// - MTL tracks per-session rates
+// - Automatic flow control if approaching limit
 
-// Frame synchronization:
-// - Use identical frame numbers across all TX sessions
-// - Use identical PTP timestamps (same epoch)
-// - Specify segment metadata (x_offset, y_offset)
+// No frame sync needed unless reconstructing full frame
 ```
 
 ---
 
-#### Sample Configuration: 4-Port Parallel TX (Full 1080p60)
+#### Sample Configuration: Single I225 with 4 Streams
 
-**Scenario:** Transmit 1080p60 YUV 4:2:2 10-bit using 4× I225 NICs
+**Scenario:** Transmit 4× segments (3× active @ 60fps) on single I225 NIC
 
-**TX Configuration (Sender with 4× I225 NICs):**
+**TX Configuration (Single I225 NIC, 3 active streams):**
 ```json
 {
   "interfaces": [
@@ -745,24 +742,6 @@ Total recommended: 64 MB per stream
       "ip": "192.168.1.101",
       "port": "2.5G",
       "ptp_master": true
-    },
-    {
-      "name": "enp2s0f0",
-      "ip": "192.168.1.102",
-      "port": "2.5G",
-      "ptp_slave": "enp1s0f0"
-    },
-    {
-      "name": "enp3s0f0",
-      "ip": "192.168.1.103",
-      "port": "2.5G",
-      "ptp_slave": "enp1s0f0"
-    },
-    {
-      "name": "enp4s0f0",
-      "ip": "192.168.1.104",
-      "port": "2.5G",
-      "ptp_slave": "enp1s0f0"
     }
   ],
   "tx_sessions": [
@@ -776,20 +755,17 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_tl",
-      "frame_sync": true,
+      "name": "segment_1",
       "metadata": {
-        "full_frame_width": 1920,
-        "full_frame_height": 1080,
         "segment_id": 1,
         "x_offset": 0,
         "y_offset": 0,
-        "total_segments": 4
+        "description": "Top-left quarter"
       }
     },
     {
       "type": "st20",
-      "interface": "enp2s0f0",
+      "interface": "enp1s0f0",
       "ip": "239.1.1.2",
       "port": 20000,
       "payload_type": 112,
@@ -797,20 +773,17 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_tr",
-      "frame_sync": true,
+      "name": "segment_2",
       "metadata": {
-        "full_frame_width": 1920,
-        "full_frame_height": 1080,
         "segment_id": 2,
         "x_offset": 960,
         "y_offset": 0,
-        "total_segments": 4
+        "description": "Top-right quarter"
       }
     },
     {
       "type": "st20",
-      "interface": "enp3s0f0",
+      "interface": "enp1s0f0",
       "ip": "239.1.1.3",
       "port": 20000,
       "payload_type": 112,
@@ -818,69 +791,31 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_bl",
-      "frame_sync": true,
+      "name": "segment_3",
       "metadata": {
-        "full_frame_width": 1920,
-        "full_frame_height": 1080,
         "segment_id": 3,
         "x_offset": 0,
         "y_offset": 540,
-        "total_segments": 4
-      }
-    },
-    {
-      "type": "st20",
-      "interface": "enp4s0f0",
-      "ip": "239.1.1.4",
-      "port": 20000,
-      "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
-      "fmt": "YUV422_10bit",
-      "name": "segment_br",
-      "frame_sync": true,
-      "metadata": {
-        "full_frame_width": 1920,
-        "full_frame_height": 1080,
-        "segment_id": 4,
-        "x_offset": 960,
-        "y_offset": 540,
-        "total_segments": 4
+        "description": "Bottom-left quarter"
       }
     }
   ],
-  "frame_sync_config": {
-    "mode": "strict",
-    "max_frame_drift": 1,
-    "sync_source": "ptp"
+  "bandwidth_budget": {
+    "link_speed_gbps": 2.5,
+    "total_allocated_gbps": 2.25,
+    "utilization_percent": 90,
+    "headroom_gbps": 0.25
   }
 }
 ```
 
-**RX Configuration (Receiver with 4× I225 NICs):**
+**RX Configuration (Single I225 NIC, 3 streams):**
 ```json
 {
   "interfaces": [
     {
       "name": "enp1s0f0",
       "ip": "192.168.1.201",
-      "port": "2.5G"
-    },
-    {
-      "name": "enp2s0f0",
-      "ip": "192.168.1.202",
-      "port": "2.5G"
-    },
-    {
-      "name": "enp3s0f0",
-      "ip": "192.168.1.203",
-      "port": "2.5G"
-    },
-    {
-      "name": "enp4s0f0",
-      "ip": "192.168.1.204",
       "port": "2.5G"
     }
   ],
@@ -895,7 +830,7 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_tl",
+      "name": "segment_1",
       "metadata": {
         "segment_id": 1,
         "x_offset": 0,
@@ -904,7 +839,7 @@ Total recommended: 64 MB per stream
     },
     {
       "type": "st20",
-      "interface": "enp2s0f0",
+      "interface": "enp1s0f0",
       "ip": "239.1.1.2",
       "port": 20000,
       "payload_type": 112,
@@ -912,7 +847,7 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_tr",
+      "name": "segment_2",
       "metadata": {
         "segment_id": 2,
         "x_offset": 960,
@@ -921,7 +856,7 @@ Total recommended: 64 MB per stream
     },
     {
       "type": "st20",
-      "interface": "enp3s0f0",
+      "interface": "enp1s0f0",
       "ip": "239.1.1.3",
       "port": 20000,
       "payload_type": 112,
@@ -929,74 +864,51 @@ Total recommended: 64 MB per stream
       "height": 540,
       "fps": "p60",
       "fmt": "YUV422_10bit",
-      "name": "segment_bl",
+      "name": "segment_3",
       "metadata": {
         "segment_id": 3,
         "x_offset": 0,
         "y_offset": 540
       }
-    },
-    {
-      "type": "st20",
-      "interface": "enp4s0f0",
-      "ip": "239.1.1.4",
-      "port": 20000,
-      "payload_type": 112,
-      "width": 960,
-      "height": 540,
-      "fps": "p60",
-      "fmt": "YUV422_10bit",
-      "name": "segment_br",
-      "metadata": {
-        "segment_id": 4,
-        "x_offset": 960,
-        "y_offset": 540
-      }
     }
   ],
-  "frame_reconstruction_config": {
-    "mode": "parallel_segments",
-    "output_resolution": {
-      "width": 1920,
-      "height": 1080
-    },
-    "output_fps": "p60",
-    "wait_all_segments": true,
-    "max_wait_time_us": 1000,
-    "drop_incomplete_frames": true
-  }
+  "notes": [
+    "All streams received on same physical interface",
+    "Hardware RSS distributes packets to CPU cores",
+    "Application can selectively process streams",
+    "Optional: Reconstruct partial frame from 3 segments"
+  ]
 }
 ```
 
 ---
 
-#### Frame Synchronization Implementation
+#### Multi-Stream Implementation
 
-**TX Side - Ensure Simultaneous Transmission:**
+**TX Side - Multiple Streams on Single Interface:**
 ```c
-// MTL TX API usage for frame-synchronized multi-port transmission
+// MTL TX API usage for multi-stream transmission on single NIC
 
 struct mtl_init_params init_params = {0};
-init_params.num_ports = 4;
-init_params.ptp_systime_sync = true; // Critical for sync
+init_params.num_ports = 1; // Single interface
+init_params.ptp_systime_sync = true;
 
-// Initialize MTL with 4 interfaces
+// Initialize MTL with 1 interface
 mtl_handle mtl = mtl_init(&init_params);
 
-// Create 4 TX sessions (one per segment/port)
-struct st20_tx_ops tx_ops[4];
-for (int i = 0; i < 4; i++) {
+// Create 3 TX sessions (all on same port, different multicast groups)
+struct st20_tx_ops tx_ops[3];
+for (int i = 0; i < 3; i++) {
     tx_ops[i].port.num_port = 1;
-    tx_ops[i].port.port[0] = i; // Port 0, 1, 2, 3
+    tx_ops[i].port.port[0] = 0; // All use port 0
     tx_ops[i].width = 960;
     tx_ops[i].height = 540;
     tx_ops[i].fps = ST_FPS_P60;
     tx_ops[i].fmt = ST20_FMT_YUV_422_10BIT;
     tx_ops[i].framebuff_cnt = 3;
     
-    // Enable frame sync
-    tx_ops[i].flags |= ST20_TX_FLAG_ENABLE_VSYNC;
-    tx_ops[i].flags |= ST20_TX_FLAG_USER_PACING;
+    // Each session gets unique multicast group
+    snprintf(tx_ops[i].dip_addr, "%s", multicast_ips[i]);
     
     tx_handles[i] = st20_tx_create(mtl, &tx_ops[i]);
 }
@@ -1180,29 +1092,31 @@ if (missing_segments > threshold) {
 
 ## Quick Reference Tables
 
-### Multi-Port System Bandwidth (YUV 4:2:2 10-bit @ 60fps)
+### Single-NIC Multi-Stream Bandwidth (YUV 4:2:2 10-bit @ 60fps)
 
-**Goal: Transmit Full 1920×1080 @ 60fps = 2.98 Gbps**
+**Single Intel I225 2.5GbE NIC Capacity**
 
-| Ports | Segment Size | Bandwidth/Port | Total Bandwidth | Full Frame? |
-|-------|-------------|----------------|-----------------|-------------|
-| **4× 2.5G** | **960×540** | **0.75 Gbps** | **3.0 Gbps** | **✅ Yes (10G effective)** |
-| **2× 2.5G** | 1920×540 | 1.49 Gbps | 2.98 Gbps | ✅ Yes (5G effective) |
-| **1× 2.5G** | 1920×1080 | 2.98 Gbps | 2.98 Gbps | ❌ No (exceeds single port) |
+| Segment Size | Per-Stream BW | Max Concurrent Streams | Total BW Used | Utilization | Use Case |
+|-------------|---------------|----------------------|---------------|-------------|----------|
+| **Full** | 1920×1080 | 2.98 Gbps | ❌ **0** (exceeds link) | - | Requires 10G or compression |
+| **Half** | 1920×540 | 1.49 Gbps | ✅ **1 stream** | 1.49 Gbps | 60% | ROI or half-frame |
+| **Quarter** | 960×540 | 0.75 Gbps | ✅ **3 streams** | 2.25 Gbps | 90% | **✅ Recommended** |
+| **One-Ninth** | 640×360 | 0.33 Gbps | ✅ **7 streams** | 2.31 Gbps | 92% | Multi-region |
+| **One-Sixteenth** | 480×270 | 0.19 Gbps | ✅ **13 streams** | 2.47 Gbps | 99% | Many small regions |
 
-**Recommended: 4× 2.5G ports for best reliability (30% utilization per port)**
+**Recommended: 3× Quarter-frame streams @ 60fps (90% utilization, 10% headroom)**
 
 ---
 
-### Bandwidth per Segment @ 60fps (YUV 4:2:2 10-bit)
+### Single-NIC Stream Combinations @ 60fps
 
-| Segment Size | Resolution | Bandwidth | Ports Needed for Full Frame |
-|-------------|-----------|-----------|-----------------------------|
-| **Full** | 1920×1080 | 2.98 Gbps | 2 ports (1.49 Gbps each) |
-| **Half** | 1920×540 | 1.49 Gbps | 2 ports (0.75 Gbps each) |
-| **Quarter** | 960×540 | 0.75 Gbps | 4 ports ✅ Recommended |
-| **One-Ninth** | 640×360 | 0.33 Gbps | 9 ports (overkill) |
-| **One-Sixteenth** | 480×270 | 0.19 Gbps | 16 ports (impractical) |
+| Configuration | Stream 1 | Stream 2 | Stream 3 | Total BW | Utilization | Notes |
+|--------------|----------|----------|----------|----------|-------------|-------|
+| **3× Quarter** | 960×540 | 960×540 | 960×540 | 2.25 Gbps | 90% | ✅ Best balance |
+| **2× Quarter** | 960×540 | 960×540 | - | 1.49 Gbps | 60% | Room for other traffic |
+| **1× Half + 2× Ninth** | 1920×540 | 640×360 | 640×360 | 2.15 Gbps | 86% | Main + 2 ROI |
+| **7× Ninth** | 640×360 (×7) | - | - | 2.31 Gbps | 92% | Multi-camera grid |
+| **1× Quarter + 4× Ninth** | 960×540 | 640×360 (×4) | - | 2.07 Gbps | 83% | Main + 4 small |
 
 ---
 
@@ -1328,9 +1242,11 @@ print(f"Max segments: {segments}, Utilization: {util:.1f}%")
    - Medical imaging with diagnostic quality
    - Broadcast graphics overlays
 
-4. **I225/I226 2.5GbE NICs are viable for professional uncompressed workflows** when combined with intelligent segmentation strategies
+4. **I225/I226 2.5GbE NICs are viable for professional uncompressed workflows** when using single-NIC multi-stream transmission with intelligent segmentation strategies
 
 5. **Critical success factors:**
+   - Multiple ST2110-20 streams multiplexed on single interface
+   - Bandwidth budget management (total ≤ 2.5 Gbps)
    - Precise PTP synchronization (prefer I226-V with TSN)
    - Pixel-perfect boundary alignment
    - Chroma subsampling awareness (even dimensions)
