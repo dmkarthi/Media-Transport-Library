@@ -626,141 +626,439 @@ The tables below show bandwidth requirements for different YUV and RGB formats a
 
 #### 2.5G/5G Controllers (I225/I226)
 
-**Uncompressed ST2110-20:**
+**Standard Uncompressed (YUV 4:2:2 10-bit - ST2110-20):**
 
-| Controller | Link Speed | 1080p24 Uncompressed | 1080p25 Uncompressed | 1080p30 Uncompressed | 1080p50 Uncompressed | 1080p60 Uncompressed |
-|------------|-----------|----------------------|----------------------|----------------------|----------------------|----------------------|
-| I225-V | 2.5 Gbps | ✅ 2 streams | ✅ 2 streams | ✅ 1 stream | ⚠️ 1 stream (at limit) | ❌ |
-| I226-V (TSN) | 2.5 Gbps | ✅ 2 streams | ✅ 2 streams | ✅ 1 stream | ⚠️ 1 stream (at limit) | ❌ |
+| Controller | Link Speed | 1080p24 | 1080p25 | 1080p30 | 1080p50 | 1080p60 |
+|------------|-----------|---------|---------|---------|---------|---------|
+| I225-V | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | ⚠️ 1 (at limit) | ❌ |
+| I226-V (TSN) | 2.5 Gbps | ✅ 2 | ✅ 2 | ✅ 1 | ⚠️ 1 (at limit) | ❌ |
+
+**Maximum Streams by Format @ 1080p60 (2.5G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams | Notes |
+|--------|-----------|-----------|-------------|-------|
+| **YUV 4:2:0** | 8-bit | 1.79 Gbps | ✅ **1** | Bandwidth-efficient |
+| YUV 4:2:0 | 10-bit | 2.24 Gbps | ✅ **1** | HDR support |
+| YUV 4:2:0 | 12-bit | 2.69 Gbps | ❌ **0** | Exceeds capacity |
+| **YUV 4:2:2** | 8-bit | 2.39 Gbps | ✅ **1** | Near capacity limit |
+| **YUV 4:2:2** ★ | **10-bit** | **2.98 Gbps** | **❌ 0** | **ST2110 standard - requires 10G** |
+| YUV 4:2:2 | 12-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
+| **YUV 4:4:4** | 8-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
+| YUV 4:4:4 | 10-bit | 4.48 Gbps | ❌ **0** | Requires 10G |
+| YUV 4:4:4 | 12-bit | 5.37 Gbps | ❌ **0** | Requires 10G |
+| **RGB** | 8-bit | 3.58 Gbps | ❌ **0** | Requires 10G |
+| RGB | 10-bit | 4.48 Gbps | ❌ **0** | Requires 10G |
+| RGB | 12-bit | 5.37 Gbps | ❌ **0** | Requires 10G |
+
+**Maximum Streams by Format @ 1080p30 (2.5G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams | Notes |
+|--------|-----------|-----------|-------------|-------|
+| **YUV 4:2:0** | 8-bit | 0.90 Gbps | ✅ **2** | Excellent efficiency |
+| YUV 4:2:0 | 10-bit | 1.12 Gbps | ✅ **2** | HDR capable |
+| YUV 4:2:0 | 12-bit | 1.34 Gbps | ✅ **1** | High quality |
+| **YUV 4:2:2** | 8-bit | 1.20 Gbps | ✅ **2** | Good quality |
+| **YUV 4:2:2** ★ | **10-bit** | **1.50 Gbps** | **✅ 1** | **ST2110 standard** |
+| YUV 4:2:2 | 12-bit | 1.79 Gbps | ✅ **1** | Premium quality |
+| **YUV 4:4:4** | 8-bit | 1.79 Gbps | ✅ **1** | Full color |
+| YUV 4:4:4 | 10-bit | 2.24 Gbps | ✅ **1** | High-end |
+| YUV 4:4:4 | 12-bit | 2.69 Gbps | ❌ **0** | Exceeds capacity |
+| **RGB** | 8-bit | 1.79 Gbps | ✅ **1** | Graphics |
+| RGB | 10-bit | 2.24 Gbps | ✅ **1** | CGI workflows |
+| RGB | 12-bit | 2.69 Gbps | ❌ **0** | Exceeds capacity |
 
 **Compressed ST2110-22 (10:1 JPEGXS):**
 
-| Controller | Link Speed | 1080p30 Compressed | 1080p60 Compressed | 4K30 Compressed | 4K60 Compressed |
-|------------|-----------|--------------------|--------------------|-----------------|------------------|
-| I225-V | 2.5 Gbps | ✅ 8 streams | ✅ 4 streams | ✅ 4 streams | ✅ 2 streams |
-| I226-V (TSN) | 2.5 Gbps | ✅ 8 streams | ✅ 4 streams | ✅ 4 streams | ✅ 2 streams |
+| Resolution/FPS | Format | Compressed BW | Max Streams |
+|----------------|--------|---------------|-------------|
+| 1080p30 | Any format | 0.15 Gbps (avg) | ✅ **16** |
+| 1080p60 | Any format | 0.30 Gbps (avg) | ✅ **8** |
+| 4K30 | Any format | 0.60 Gbps (avg) | ✅ **4** |
+| 4K60 | Any format | 1.19 Gbps (avg) | ✅ **2** |
 
-**Use Cases:**
-- ✅ **NEW:** Uncompressed 1080p ≤30fps (cinema, PAL, NTSC standards)
-- ✅ **NEW:** Uncompressed 1080i (broadcast)
-- ✅ ST2110-22 compressed video (all resolutions/fps with 10:1+ compression)
-- ✅ Preview/monitoring streams
-- ✅ Audio transport (ST2110-30)
-- ❌ 1080p60+ uncompressed (insufficient bandwidth)
-
-**Bandwidth Notes:**
-- 1080p24/25: 1.20-1.25 Gbps → 2 streams possible
-- 1080p30: 1.50 Gbps → 1 stream with headroom
-- 1080p50: 2.49 Gbps → 1 stream at 99.6% link utilization
-- 1080p60: 2.98 Gbps → Exceeds 2.5G capacity
+**Key Takeaways:**
+- ✅ **Best for:** YUV 4:2:0 formats at 1080p, compressed workflows
+- ✅ **Viable:** YUV 4:2:2 8-bit and 10-bit at 1080p ≤30fps
+- ❌ **Not recommended:** 1080p60 standard (YUV 4:2:2 10-bit), 4:4:4 formats uncompressed
+- 💡 **Tip:** Use YUV 4:2:0 10-bit for HDR 1080p60 within 2.5G bandwidth
 
 ---
 
 #### 10G Controllers (X710)
 
-| Controller | Link Speed | Format | 1080p60 | 4K30 | 4K60 |
-|------------|-----------|--------|---------|------|------|
-| X710-DA2 | 2×10 Gbps | Uncompressed | ✅ 3/port | ✅ 1/port | ❌ | 
-| X710-DA2 | 2×10 Gbps | Compressed (10:1) | ✅ 30/port | ✅ 15/port | ✅ 8/port |
-| X710-DA4 | 4×10 Gbps | Uncompressed | ✅ 3/port | ✅ 1/port | ❌ |
-| X710-DA4 | 4×10 Gbps | Compressed (10:1) | ✅ 30/port | ✅ 15/port | ✅ 8/port |
+**Standard Format (YUV 4:2:2 10-bit - ST2110-20):**
 
-**Bandwidth Utilization:**
-- **1080p60 uncompressed:** ~3 Gbps per stream (30% link usage)
-- **4K30 uncompressed:** ~6 Gbps per stream (60% link usage)
-- **4K60 uncompressed:** ~12 Gbps per stream (requires 25G+)
+| Controller | Model | 1080p60 | 4K30 | 4K60 |
+|------------|-------|---------|------|------|
+| X710-DA2 | 2×10 Gbps | ✅ 3/port | ✅ 1/port | ❌ |
+| X710-DA4 | 4×10 Gbps | ✅ 3/port | ✅ 1/port | ❌ |
 
-**Recommended Usage:**
-- ✅ 1080p uncompressed production
-- ✅ 4K30 uncompressed (single stream per port)
-- ✅ Multi-stream compressed 4K
-- ❌ 4K60 uncompressed (insufficient bandwidth)
+**Maximum Streams by Format @ 1080p60 (10G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 1.79 Gbps | ✅ **5** | 90% |
+| YUV 4:2:0 | 10-bit | 2.24 Gbps | ✅ **4** | 90% |
+| YUV 4:2:0 | 12-bit | 2.69 Gbps | ✅ **3** | 81% |
+| **YUV 4:2:2** | 8-bit | 2.39 Gbps | ✅ **4** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **2.98 Gbps** | **✅ 3** | **89%** |
+| YUV 4:2:2 | 12-bit | 3.58 Gbps | ✅ **2** | 72% |
+| **YUV 4:4:4** | 8-bit | 3.58 Gbps | ✅ **2** | 72% |
+| YUV 4:4:4 | 10-bit | 4.48 Gbps | ✅ **2** | 90% |
+| YUV 4:4:4 | 12-bit | 5.37 Gbps | ✅ **1** | 54% |
+| **RGB** | 8-bit | 3.58 Gbps | ✅ **2** | 72% |
+| RGB | 10-bit | 4.48 Gbps | ✅ **2** | 90% |
+| RGB | 12-bit | 5.37 Gbps | ✅ **1** | 54% |
+
+**Maximum Streams by Format @ 4K60 (10G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 7.16 Gbps | ✅ **1** | 72% |
+| YUV 4:2:0 | 10-bit | 8.95 Gbps | ✅ **1** | 90% |
+| YUV 4:2:0 | 12-bit | 10.74 Gbps | ❌ **0** | >100% |
+| **YUV 4:2:2** | 8-bit | 9.55 Gbps | ✅ **1** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **11.94 Gbps** | **❌ 0** | **>100% - requires 25G** |
+| YUV 4:2:2 | 12-bit | 14.33 Gbps | ❌ **0** | >100% |
+| **YUV 4:4:4** | 8-bit | 14.33 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 10-bit | 17.91 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 12-bit | 21.49 Gbps | ❌ **0** | >100% |
+| **RGB** | 8-bit | 14.33 Gbps | ❌ **0** | >100% |
+| RGB | 10-bit | 17.91 Gbps | ❌ **0** | >100% |
+| RGB | 12-bit | 21.49 Gbps | ❌ **0** | >100% |
+
+**Maximum Streams by Format @ 4K30 (10G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 3.58 Gbps | ✅ **2** | 72% |
+| YUV 4:2:0 | 10-bit | 4.48 Gbps | ✅ **2** | 90% |
+| YUV 4:2:0 | 12-bit | 5.37 Gbps | ✅ **1** | 54% |
+| **YUV 4:2:2** | 8-bit | 4.78 Gbps | ✅ **2** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **5.99 Gbps** | **✅ 1** | **60%** |
+| YUV 4:2:2 | 12-bit | 7.16 Gbps | ✅ **1** | 72% |
+| **YUV 4:4:4** | 8-bit | 7.16 Gbps | ✅ **1** | 72% |
+| YUV 4:4:4 | 10-bit | 8.95 Gbps | ✅ **1** | 90% |
+| YUV 4:4:4 | 12-bit | 10.74 Gbps | ❌ **0** | >100% |
+| **RGB** | 8-bit | 7.16 Gbps | ✅ **1** | 72% |
+| RGB | 10-bit | 8.95 Gbps | ✅ **1** | 90% |
+| RGB | 12-bit | 10.74 Gbps | ❌ **0** | >100% |
+
+**Compressed ST2110-22 (10:1 JPEGXS):**
+
+| Resolution/FPS | Format | Max Streams/Port |
+|----------------|--------|------------------|
+| 1080p60 | Any | ✅ **33** |
+| 4K30 | Any | ✅ **16** |
+| 4K60 | Any | ✅ **8** |
+
+**Key Takeaways:**
+- ✅ **Best for:** HD uncompressed production (all formats), 4K30 with YUV 4:2:0/4:2:2
+- ✅ **Viable:** 4K60 with YUV 4:2:0 8-bit/10-bit only
+- ❌ **Not supported:** 4K60 standard (YUV 4:2:2 10-bit), 4:4:4/RGB at 4K60
+- 💡 **Tip:** Use YUV 4:2:0 for 4K60 within 10G bandwidth
 
 ---
 
 #### 25G Controllers (XXV710)
 
-| Controller | Link Speed | Format | 1080p60 | 4K30 | 4K60 | 4K120 |
-|------------|-----------|--------|---------|------|------|-------|
-| XXV710-DA2 | 2×25 Gbps | Uncompressed | ✅ 8/port | ✅ 4/port | ✅ 2/port | ❌ |
-| XXV710-DA2 | 2×25 Gbps | Compressed (10:1) | ✅ 80/port | ✅ 40/port | ✅ 20/port | ✅ 10/port |
+**Standard Format (YUV 4:2:2 10-bit - ST2110-20):**
 
-**Bandwidth Utilization:**
-- **1080p60:** ~3 Gbps (12% link usage)
-- **4K30:** ~6 Gbps (24% link usage)
-- **4K60:** ~12 Gbps (48% link usage)
-- **4K120:** ~24 Gbps (96% link usage - at limit)
+| Controller | Model | 1080p60 | 4K30 | 4K60 | 4K120 |
+|------------|-------|---------|------|------|-------|
+| XXV710-DA2 | 2×25 Gbps | ✅ 8/port | ✅ 4/port | ✅ 2/port | ❌ |
 
-**Recommended Usage:**
-- ✅ Multiple 1080p uncompressed streams
-- ✅ Multiple 4K30 uncompressed streams
-- ✅ Dual 4K60 uncompressed streams
-- ✅ High-density compressed 4K workflows
-- ⚠️ Single 4K120 uncompressed (near bandwidth limit)
+**Maximum Streams by Format @ 1080p60 (25G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 1.79 Gbps | ✅ **13** | 93% |
+| YUV 4:2:0 | 10-bit | 2.24 Gbps | ✅ **11** | 99% |
+| YUV 4:2:0 | 12-bit | 2.69 Gbps | ✅ **9** | 97% |
+| **YUV 4:2:2** | 8-bit | 2.39 Gbps | ✅ **10** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **2.98 Gbps** | **✅ 8** | **95%** |
+| YUV 4:2:2 | 12-bit | 3.58 Gbps | ✅ **6** | 86% |
+| **YUV 4:4:4** | 8-bit | 3.58 Gbps | ✅ **6** | 86% |
+| YUV 4:4:4 | 10-bit | 4.48 Gbps | ✅ **5** | 90% |
+| YUV 4:4:4 | 12-bit | 5.37 Gbps | ✅ **4** | 86% |
+| **RGB** | 8-bit | 3.58 Gbps | ✅ **6** | 86% |
+| RGB | 10-bit | 4.48 Gbps | ✅ **5** | 90% |
+| RGB | 12-bit | 5.37 Gbps | ✅ **4** | 86% |
+
+**Maximum Streams by Format @ 4K60 (25G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 7.16 Gbps | ✅ **3** | 86% |
+| YUV 4:2:0 | 10-bit | 8.95 Gbps | ✅ **2** | 72% |
+| YUV 4:2:0 | 12-bit | 10.74 Gbps | ✅ **2** | 86% |
+| **YUV 4:2:2** | 8-bit | 9.55 Gbps | ✅ **2** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **11.94 Gbps** | **✅ 2** | **96%** |
+| YUV 4:2:2 | 12-bit | 14.33 Gbps | ✅ **1** | 57% |
+| **YUV 4:4:4** | 8-bit | 14.33 Gbps | ✅ **1** | 57% |
+| YUV 4:4:4 | 10-bit | 17.91 Gbps | ✅ **1** | 72% |
+| YUV 4:4:4 | 12-bit | 21.49 Gbps | ✅ **1** | 86% |
+| **RGB** | 8-bit | 14.33 Gbps | ✅ **1** | 57% |
+| RGB | 10-bit | 17.91 Gbps | ✅ **1** | 72% |
+| RGB | 12-bit | 21.49 Gbps | ✅ **1** | 86% |
+
+**Maximum Streams by Format @ 4K120 (25G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 14.33 Gbps | ✅ **1** | 57% |
+| YUV 4:2:0 | 10-bit | 17.91 Gbps | ✅ **1** | 72% |
+| YUV 4:2:0 | 12-bit | 21.49 Gbps | ✅ **1** | 86% |
+| **YUV 4:2:2** | 8-bit | 19.11 Gbps | ✅ **1** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **23.88 Gbps** | **✅ 1** | **96% - at limit** |
+| YUV 4:2:2 | 12-bit | 28.67 Gbps | ❌ **0** | >100% |
+| **YUV 4:4:4** | 8-bit | 28.67 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 10-bit | 35.83 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 12-bit | 42.99 Gbps | ❌ **0** | >100% |
+| **RGB** | 8-bit | 28.67 Gbps | ❌ **0** | >100% |
+| RGB | 10-bit | 35.83 Gbps | ❌ **0** | >100% |
+| RGB | 12-bit | 42.99 Gbps | ❌ **0** | >100% |
+
+**Compressed ST2110-22 (10:1 JPEGXS):**
+
+| Resolution/FPS | Format | Max Streams/Port |
+|----------------|--------|------------------|
+| 1080p60 | Any | ✅ **83** |
+| 4K60 | Any | ✅ **21** |
+| 4K120 | Any | ✅ **10** |
+| 8K30 | Any | ✅ **10** |
+
+**Key Takeaways:**
+- ✅ **Best for:** 4K60 uncompressed (standard + all variants), multi-stream HD
+- ✅ **Viable:** 4K120 with YUV 4:2:2 10-bit (at 96% capacity), 4:2:0 formats
+- ⚠️ **Near limit:** 4K120 standard format uses 96% of bandwidth
+- ❌ **Not supported:** 4K120 with 4:4:4 or RGB formats
+- 💡 **Sweet spot:** Dual 4K60 streams standard format
 
 ---
 
 #### 40G Controllers (XL710)
 
-| Controller | Link Speed | Format | 1080p60 | 4K30 | 4K60 | 4K120 | 8K30 |
-|------------|-----------|--------|---------|------|------|-------|------|
-| XL710-QDA2 | 2×40 Gbps | Uncompressed | ✅ 13/port | ✅ 6/port | ✅ 3/port | ✅ 1/port | ✅ 1/port |
-| XL710-QDA2 | 2×40 Gbps | Compressed (10:1) | ✅ 130/port | ✅ 65/port | ✅ 33/port | ✅ 16/port | ✅ 16/port |
+**Standard Format (YUV 4:2:2 10-bit - ST2110-20):**
 
-**Bandwidth Utilization:**
-- **4K60:** ~12 Gbps (30% link usage)
-- **4K120:** ~24 Gbps (60% link usage)
-- **8K30:** ~24 Gbps (60% link usage)
+| Controller | Model | 1080p60 | 4K60 | 4K120 | 8K30 | 8K60 |
+|------------|-------|---------|------|-------|------|------|
+| XL710-QDA2 | 2×40 Gbps | ✅ 13/port | ✅ 3/port | ✅ 1/port | ✅ 1/port | ❌ |
 
-**Recommended Usage:**
-- ✅ Multi-stream 4K60 uncompressed production
-- ✅ High frame rate 4K workflows
-- ✅ Single 8K30 uncompressed stream
-- ✅ Very high-density compressed workflows
+**Maximum Streams by Format @ 4K60 (40G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 7.16 Gbps | ✅ **5** | 90% |
+| YUV 4:2:0 | 10-bit | 8.95 Gbps | ✅ **4** | 90% |
+| YUV 4:2:0 | 12-bit | 10.74 Gbps | ✅ **3** | 81% |
+| **YUV 4:2:2** | 8-bit | 9.55 Gbps | ✅ **4** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **11.94 Gbps** | **✅ 3** | **90%** |
+| YUV 4:2:2 | 12-bit | 14.33 Gbps | ✅ **2** | 72% |
+| **YUV 4:4:4** | 8-bit | 14.33 Gbps | ✅ **2** | 72% |
+| YUV 4:4:4 | 10-bit | 17.91 Gbps | ✅ **2** | 90% |
+| YUV 4:4:4 | 12-bit | 21.49 Gbps | ✅ **1** | 54% |
+| **RGB** | 8-bit | 14.33 Gbps | ✅ **2** | 72% |
+| RGB | 10-bit | 17.91 Gbps | ✅ **2** | 90% |
+| RGB | 12-bit | 21.49 Gbps | ✅ **1** | 54% |
+
+**Maximum Streams by Format @ 8K30 (40G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 14.33 Gbps | ✅ **2** | 72% |
+| YUV 4:2:0 | 10-bit | 17.91 Gbps | ✅ **2** | 90% |
+| YUV 4:2:0 | 12-bit | 21.50 Gbps | ✅ **1** | 54% |
+| **YUV 4:2:2** | 8-bit | 19.11 Gbps | ✅ **2** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **23.96 Gbps** | **✅ 1** | **60%** |
+| YUV 4:2:2 | 12-bit | 28.67 Gbps | ✅ **1** | 72% |
+| **YUV 4:4:4** | 8-bit | 28.67 Gbps | ✅ **1** | 72% |
+| YUV 4:4:4 | 10-bit | 35.83 Gbps | ✅ **1** | 90% |
+| YUV 4:4:4 | 12-bit | 42.99 Gbps | ✅ **1** | 107% ⚠️ |
+| **RGB** | 8-bit | 28.67 Gbps | ✅ **1** | 72% |
+| RGB | 10-bit | 35.83 Gbps | ✅ **1** | 90% |
+| RGB | 12-bit | 42.99 Gbps | ✅ **1** | 107% ⚠️ |
+
+**Maximum Streams by Format @ 8K60 (40G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Notes |
+|--------|-----------|-----------|------------------|-------|
+| **YUV 4:2:0** | 8-bit | 28.66 Gbps | ✅ **1** | 72% |
+| YUV 4:2:0 | 10-bit | 35.83 Gbps | ✅ **1** | 90% |
+| YUV 4:2:0 | 12-bit | 42.99 Gbps | ❌ **0** | >100% |
+| **YUV 4:2:2** | 8-bit | 38.22 Gbps | ✅ **1** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **47.75 Gbps** | **❌ 0** | **>100% - requires 50G** |
+| All other formats | - | >40 Gbps | ❌ **0** | Requires 50G/100G |
+
+**Compressed ST2110-22 (10:1 JPEGXS):**
+
+| Resolution/FPS | Format | Max Streams/Port |
+|----------------|--------|------------------|
+| 4K60 | Any | ✅ **33** |
+| 4K120 | Any | ✅ **16** |
+| 8K30 | Any | ✅ **16** |
+| 8K60 | Any | ✅ **8** |
+
+**Key Takeaways:**
+- ✅ **Best for:** Multi-stream 4K60, 8K30 production, high frame rate
+- ✅ **Viable:** 8K60 with YUV 4:2:0 formats only
+- ❌ **Not supported:** 8K60 standard format (requires 50G)
+- 💡 **Sweet spot:** 3× 4K60 standard streams per port
 
 ---
 
 #### 50G Controllers (E810)
 
-| Controller | Link Speed | Format | 1080p60 | 4K60 | 4K120 | 8K30 | 8K60 |
-|------------|-----------|--------|---------|------|-------|------|------|
-| E810-XXVDA4 (2×25G) | 2×25 Gbps | Uncompressed | ✅ 8/port | ✅ 2/port | ❌ | ❌ | ❌ |
-| E810-CQDA2 (50G mode) | 2×50 Gbps | Uncompressed | ✅ 16/port | ✅ 4/port | ✅ 2/port | ✅ 2/port | ✅ 1/port |
-| E810-CQDA2 (50G mode) | 2×50 Gbps | Compressed (10:1) | ✅ 160/port | ✅ 40/port | ✅ 20/port | ✅ 20/port | ✅ 10/port |
+**Standard Format (YUV 4:2:2 10-bit - ST2110-20):**
 
-**Bandwidth Utilization:**
-- **4K60:** ~12 Gbps (24% link usage)
-- **4K120:** ~24 Gbps (48% link usage)
-- **8K30:** ~24 Gbps (48% link usage)
-- **8K60:** ~48 Gbps (96% link usage)
+| Controller | Model | 1080p60 | 4K60 | 4K120 | 8K30 | 8K60 |
+|------------|-------|---------|------|-------|------|------|
+| E810-CQDA2 | 2×50 Gbps | ✅ 16/port | ✅ 4/port | ✅ 2/port | ✅ 2/port | ✅ 1/port |
 
-**Recommended Usage:**
-- ✅ High-density 4K60 uncompressed
-- ✅ Multiple 4K120 uncompressed streams
-- ✅ 8K30/8K60 production workflows
-- ✅ Ultra-high-density compressed workflows
+**Maximum Streams by Format @ 4K60 (50G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 7.16 Gbps | ✅ **6** | 86% |
+| YUV 4:2:0 | 10-bit | 8.95 Gbps | ✅ **5** | 90% |
+| YUV 4:2:0 | 12-bit | 10.74 Gbps | ✅ **4** | 86% |
+| **YUV 4:2:2** | 8-bit | 9.55 Gbps | ✅ **5** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **11.94 Gbps** | **✅ 4** | **96%** |
+| YUV 4:2:2 | 12-bit | 14.33 Gbps | ✅ **3** | 86% |
+| **YUV 4:4:4** | 8-bit | 14.33 Gbps | ✅ **3** | 86% |
+| YUV 4:4:4 | 10-bit | 17.91 Gbps | ✅ **2** | 72% |
+| YUV 4:4:4 | 12-bit | 21.49 Gbps | ✅ **2** | 86% |
+| **RGB** | 8-bit | 14.33 Gbps | ✅ **3** | 86% |
+| RGB | 10-bit | 17.91 Gbps | ✅ **2** | 72% |
+| RGB | 12-bit | 21.49 Gbps | ✅ **2** | 86% |
+
+**Maximum Streams by Format @ 8K60 (50G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 28.66 Gbps | ✅ **1** | 57% |
+| YUV 4:2:0 | 10-bit | 35.83 Gbps | ✅ **1** | 72% |
+| YUV 4:2:0 | 12-bit | 42.99 Gbps | ✅ **1** | 86% |
+| **YUV 4:2:2** | 8-bit | 38.22 Gbps | ✅ **1** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **47.75 Gbps** | **✅ 1** | **96%** |
+| YUV 4:2:2 | 12-bit | 57.33 Gbps | ❌ **0** | >100% |
+| **YUV 4:4:4** | 8-bit | 57.33 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 10-bit | 71.66 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 12-bit | 85.99 Gbps | ❌ **0** | >100% |
+| **RGB** | 8-bit | 57.33 Gbps | ❌ **0** | >100% |
+| RGB | 10-bit | 71.66 Gbps | ❌ **0** | >100% |
+| RGB | 12-bit | 85.99 Gbps | ❌ **0** | >100% |
+
+**Maximum Streams by Format @ 8K30 (50G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 14.33 Gbps | ✅ **3** | 86% |
+| YUV 4:2:0 | 10-bit | 17.91 Gbps | ✅ **2** | 72% |
+| YUV 4:2:0 | 12-bit | 21.50 Gbps | ✅ **2** | 86% |
+| **YUV 4:2:2** | 8-bit | 19.11 Gbps | ✅ **2** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **23.96 Gbps** | **✅ 2** | **96%** |
+| YUV 4:2:2 | 12-bit | 28.67 Gbps | ✅ **1** | 57% |
+| **YUV 4:4:4** | 8-bit | 28.67 Gbps | ✅ **1** | 57% |
+| YUV 4:4:4 | 10-bit | 35.83 Gbps | ✅ **1** | 72% |
+| YUV 4:4:4 | 12-bit | 42.99 Gbps | ✅ **1** | 86% |
+| **RGB** | 8-bit | 28.67 Gbps | ✅ **1** | 57% |
+| RGB | 10-bit | 35.83 Gbps | ✅ **1** | 72% |
+| RGB | 12-bit | 42.99 Gbps | ✅ **1** | 86% |
+
+**Compressed ST2110-22 (10:1 JPEGXS):**
+
+| Resolution/FPS | Format | Max Streams/Port |
+|----------------|--------|------------------|
+| 4K60 | Any | ✅ **42** |
+| 4K120 | Any | ✅ **20** |
+| 8K30 | Any | ✅ **20** |
+| 8K60 | Any | ✅ **10** |
+
+**Key Takeaways:**
+- ✅ **Best for:** 8K60 standard format, multi-stream 4K60
+- ✅ **Viable:** 8K60 with YUV 4:2:0/4:2:2 formats
+- ⚠️ **Near limit:** 8K60 standard uses 96% of bandwidth
+- ❌ **Not supported:** 8K60 with 4:4:4 or RGB (requires 100G)
+- 💡 **Sweet spot:** 4× 4K60 standard streams per port
 
 ---
 
 #### 100G Controllers (E810)
 
-| Controller | Link Speed | Format | 1080p60 | 4K60 | 4K120 | 8K30 | 8K60 | 8K120 |
-|------------|-----------|--------|---------|------|-------|------|------|-------|
-| E810-CQDA2 | 2×100 Gbps | Uncompressed | ✅ 33/port | ✅ 8/port | ✅ 4/port | ✅ 4/port | ✅ 2/port | ✅ 1/port |
-| E810-2CQDA2 | 2×100 Gbps | Uncompressed | ✅ 33/port | ✅ 8/port | ✅ 4/port | ✅ 4/port | ✅ 2/port | ✅ 1/port |
-| E810-CQDA2 | 2×100 Gbps | Compressed (10:1) | ✅ 330/port | ✅ 80/port | ✅ 40/port | ✅ 40/port | ✅ 20/port | ✅ 10/port |
+**Standard Format (YUV 4:2:2 10-bit - ST2110-20):**
 
-**Bandwidth Utilization:**
-- **4K60:** ~12 Gbps (12% link usage)
-- **8K60:** ~48 Gbps (48% link usage)
-- **8K120:** ~96 Gbps (96% link usage - at limit)
+| Controller | Model | 1080p60 | 4K60 | 4K120 | 8K30 | 8K60 | 8K120 |
+|------------|-------|---------|------|-------|------|------|-------|
+| E810-CQDA2 | 2×100 Gbps | ✅ 33/port | ✅ 8/port | ✅ 4/port | ✅ 4/port | ✅ 2/port | ✅ 1/port |
+| E810-2CQDA2 | 2×100 Gbps | ✅ 33/port | ✅ 8/port | ✅ 4/port | ✅ 4/port | ✅ 2/port | ✅ 1/port |
 
-**Recommended Usage:**
-- ✅ Maximum density 4K production
-- ✅ Multiple 8K uncompressed streams
-- ✅ 8K120 high frame rate production
-- ✅ Future-proof infrastructure
-- ✅ Spine/aggregation layer for ST2110 networks
+**Maximum Streams by Format @ 4K60 (100G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 7.16 Gbps | ✅ **13** | 93% |
+| YUV 4:2:0 | 10-bit | 8.95 Gbps | ✅ **11** | 99% |
+| YUV 4:2:0 | 12-bit | 10.74 Gbps | ✅ **9** | 97% |
+| **YUV 4:2:2** | 8-bit | 9.55 Gbps | ✅ **10** | 96% |
+| **YUV 4:2:2** ★ | **10-bit** | **11.94 Gbps** | **✅ 8** | **96%** |
+| YUV 4:2:2 | 12-bit | 14.33 Gbps | ✅ **6** | 86% |
+| **YUV 4:4:4** | 8-bit | 14.33 Gbps | ✅ **6** | 86% |
+| YUV 4:4:4 | 10-bit | 17.91 Gbps | ✅ **5** | 90% |
+| YUV 4:4:4 | 12-bit | 21.49 Gbps | ✅ **4** | 86% |
+| **RGB** | 8-bit | 14.33 Gbps | ✅ **6** | 86% |
+| RGB | 10-bit | 17.91 Gbps | ✅ **5** | 90% |
+| RGB | 12-bit | 21.49 Gbps | ✅ **4** | 86% |
+
+**Maximum Streams by Format @ 8K60 (100G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 28.66 Gbps | ✅ **3** | 86% |
+| YUV 4:2:0 | 10-bit | 35.83 Gbps | ✅ **2** | 72% |
+| YUV 4:2:0 | 12-bit | 42.99 Gbps | ✅ **2** | 86% |
+| **YUV 4:2:2** | 8-bit | 38.22 Gbps | ✅ **2** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **47.75 Gbps** | **✅ 2** | **96%** |
+| YUV 4:2:2 | 12-bit | 57.33 Gbps | ✅ **1** | 57% |
+| **YUV 4:4:4** | 8-bit | 57.33 Gbps | ✅ **1** | 57% |
+| YUV 4:4:4 | 10-bit | 71.66 Gbps | ✅ **1** | 72% |
+| YUV 4:4:4 | 12-bit | 85.99 Gbps | ✅ **1** | 86% |
+| **RGB** | 8-bit | 57.33 Gbps | ✅ **1** | 57% |
+| RGB | 10-bit | 71.66 Gbps | ✅ **1** | 72% |
+| RGB | 12-bit | 85.99 Gbps | ✅ **1** | 86% |
+
+**Maximum Streams by Format @ 8K120 (100G NIC):**
+
+| Format | Bit Depth | Bandwidth | Max Streams/Port | Utilization |
+|--------|-----------|-----------|------------------|-------------|
+| **YUV 4:2:0** | 8-bit | 57.33 Gbps | ✅ **1** | 57% |
+| YUV 4:2:0 | 10-bit | 71.66 Gbps | ✅ **1** | 72% |
+| YUV 4:2:0 | 12-bit | 85.99 Gbps | ✅ **1** | 86% |
+| **YUV 4:2:2** | 8-bit | 76.44 Gbps | ✅ **1** | 76% |
+| **YUV 4:2:2** ★ | **10-bit** | **95.50 Gbps** | **✅ 1** | **96% - at limit** |
+| YUV 4:2:2 | 12-bit | 114.66 Gbps | ❌ **0** | >100% |
+| **YUV 4:4:4** | 8-bit | 114.66 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 10-bit | 143.32 Gbps | ❌ **0** | >100% |
+| YUV 4:4:4 | 12-bit | 171.98 Gbps | ❌ **0** | >100% |
+| **RGB** | 8-bit | 114.66 Gbps | ❌ **0** | >100% |
+| RGB | 10-bit | 143.32 Gbps | ❌ **0** | >100% |
+| RGB | 12-bit | 171.98 Gbps | ❌ **0** | >100% |
+
+**Compressed ST2110-22 (10:1 JPEGXS):**
+
+| Resolution/FPS | Format | Max Streams/Port |
+|----------------|--------|------------------|
+| 4K60 | Any | ✅ **84** |
+| 4K120 | Any | ✅ **41** |
+| 8K60 | Any | ✅ **20** |
+| 8K120 | Any | ✅ **10** |
+
+**Key Takeaways:**
+- ✅ **Best for:** Maximum density, 8K120 standard format, multiple 8K streams
+- ✅ **Viable:** All formats up to 8K60, 8K120 with YUV 4:2:0/4:2:2
+- ⚠️ **Near limit:** 8K120 standard uses 96% of bandwidth
+- ❌ **Limited:** 8K120 with 4:4:4/RGB exceeds capacity
+- 💡 **Ultimate:** 8× 4K60 standard or 2× 8K60 standard streams
 
 ---
 
