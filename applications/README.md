@@ -9,6 +9,23 @@ This directory contains standalone applications for the Intel Media Transport Li
 
 Both applications provide simplified interfaces for testing and demonstrating MTL capabilities without complex configuration requirements.
 
+## Important: Network Connectivity Guide
+
+**⚠️ IMPORTANT:** When using DPDK PMD mode (default), binding a network interface removes it from Linux kernel networking. **You will lose SSH access and normal ethernet connectivity on that interface.**
+
+**Read this first:** [Network Connectivity Guide](study-docs/nic_pmd_connectivity_guide.md)
+
+This guide explains:
+- Why connectivity is lost when binding to DPDK PMD
+- **Solution 1**: Use separate management interface (production recommended)
+- **Solution 2**: Use AF_XDP mode (no binding, keeps connectivity)
+- **Solution 3**: Use kernel socket mode (testing only)
+
+**Quick Recommendations:**
+- **Production**: Use dual NIC setup (one for management, one for MTL data)
+- **Development**: Switch to AF_XDP mode (no binding required, keeps SSH access)
+- **Testing**: Use kernel socket mode (lowest performance, easiest setup)
+
 ## System Requirements
 
 ### Ubuntu Package Dependencies
@@ -139,6 +156,14 @@ sudo ip route add 239.0.0.0/8 dev <your-interface>
 - Ensure multicast routing is configured
 - Verify PCI device addresses for network ports
 
+**Network Connectivity Issues (Losing SSH Access):**
+- **Problem**: After binding to DPDK PMD, you lose SSH access and normal ethernet connectivity
+- **Cause**: This is **expected behavior** - DPDK bypasses kernel networking
+- **Solutions**: See [Network Connectivity Guide](study-docs/nic_pmd_connectivity_guide.md) for detailed solutions:
+  - Use separate management interface (dual NIC)
+  - Switch to AF_XDP mode (no binding required)
+  - Switch to kernel socket mode (testing only)
+
 **Display Issues (RxApp):**
 - Verify SDL2 development libraries are installed
 - Check X11 display configuration for remote systems
@@ -147,6 +172,7 @@ sudo ip route add 239.0.0.0/8 dev <your-interface>
 ### Getting Help
 
 For detailed troubleshooting and configuration guidance:
+- **Network Connectivity Issues**: See [Network Connectivity Guide](study-docs/nic_pmd_connectivity_guide.md)
 - **RxApp Issues**: See [RxApp README](RxApp/README.md)
 - **TxApp Issues**: See [TxApp README](TxApp/README.md)
 - **MTL Setup**: Refer to main MTL documentation
