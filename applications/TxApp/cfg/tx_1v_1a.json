@@ -1,0 +1,35 @@
+{
+  "tx": {
+    "st20p": [
+      {
+        "dip": "239.168.85.20",
+        "udp_port": 20000,
+        "payload_type": 112,
+        "video": {
+          "width": 1920,
+          "height": 1080,
+          "fps": 25.0,
+          "input_format": "yuv422p10le"
+        }
+      }
+    ],
+    "st30p": [
+      {
+        "dip": "239.168.85.30",
+        "udp_port": 20100,
+        "payload_type": 111,
+        "audio": {
+          "type": "frame_level",
+          "sampling": "48k",
+          "channel": 2,
+          "format": "pcm24"
+        }
+      }
+    ]
+  },
+  "interfaces": [
+    {
+      "name": "0000:af:01.0"
+    }
+  ]
+}
