@@ -1,0 +1,24 @@
+MTL Format Name,Category,Subsampling,Bit Depth,Packing,FFmpeg TX,FFmpeg TX Pixel Format,FFmpeg RX,FFmpeg RX Pixel Format,TxApp,RxApp,RxApp Display,Transport Wire Format,Notes
+ST_FRAME_FMT_YUV422PLANAR10LE,YUV,4:2:2,10-bit,Planar,Yes,yuv422p10le,Yes,yuv422p10le,Yes (default),Yes,Full color,ST20_FMT_YUV_422_10BIT,Broadcast standard; default for all apps
+ST_FRAME_FMT_V210,YUV,4:2:2,10-bit,Packed (3 samples/32-bit),No,,No,,No,No,No,ST20_FMT_YUV_422_10BIT,Packed layout; no app support in this repo
+ST_FRAME_FMT_Y210,YUV,4:2:2,10-bit,Packed (16-bit/sample),Yes (workaround),y210le,Yes (workaround),y210le,No,No,No,ST20_FMT_YUV_422_10BIT,Intel Tiber Broadcast Suite workaround; manual st20_y210_to_rfc4175 convert
+ST_FRAME_FMT_YUV422PLANAR8,YUV,4:2:2,8-bit,Planar,No,,No,,No,No,No,ST20_FMT_YUV_422_8BIT,Defined in MTL API; not mapped in FFmpeg plugin or apps
+ST_FRAME_FMT_UYVY,YUV,4:2:2,8-bit,Packed,No,,No,,No,No,No,ST20_FMT_YUV_422_8BIT,Also known as ST20_FMT_YUV_422_8BIT packed
+ST_FRAME_FMT_YUV422RFC4175PG2BE10,YUV,4:2:2,10-bit,RFC4175 PG2 Big-Endian,No,,No,,No,No,No,ST20_FMT_YUV_422_10BIT,On-wire transport format only; 2 pixels per 5 bytes big-endian
+ST_FRAME_FMT_YUV422PLANAR12LE,YUV,4:2:2,12-bit,Planar,No,,No,,Yes,Yes,Full color,ST20_FMT_YUV_422_12BIT,TxApp + RxApp only; not in FFmpeg plugin
+ST_FRAME_FMT_YUV422RFC4175PG2BE12,YUV,4:2:2,12-bit,RFC4175 PG2 Big-Endian,No,,No,,No,No,No,ST20_FMT_YUV_422_12BIT,On-wire transport format only; 2 pixels per 6 bytes big-endian
+ST_FRAME_FMT_YUV444PLANAR10LE,YUV,4:4:4,10-bit,Planar,No,,No,,Yes,Yes,Full color,ST20_FMT_YUV_444_10BIT,TxApp + RxApp only; not in FFmpeg plugin
+ST_FRAME_FMT_YUV444RFC4175PG4BE10,YUV,4:4:4,10-bit,RFC4175 PG4 Big-Endian,No,,No,,No,No,No,ST20_FMT_YUV_444_10BIT,On-wire transport format only; 4 pixels per 15 bytes big-endian
+ST_FRAME_FMT_YUV444PLANAR12LE,YUV,4:4:4,12-bit,Planar,No,,No,,Yes,Yes,Full color,ST20_FMT_YUV_444_12BIT,TxApp + RxApp only; not in FFmpeg plugin
+ST_FRAME_FMT_YUV444RFC4175PG2BE12,YUV,4:4:4,12-bit,RFC4175 PG2 Big-Endian,No,,No,,No,No,No,ST20_FMT_YUV_444_12BIT,On-wire transport format only
+ST_FRAME_FMT_YUV420CUSTOM8,YUV,4:2:0,8-bit,Custom pass-through,No,,No,,No,No,No,ST20_FMT_YUV_420_8BIT,Pass-through mode; no RFC4175 conversion; for I420/NV12 direct transport
+ST_FRAME_FMT_YUV422CUSTOM8,YUV,4:2:2,8-bit,Custom pass-through,No,,No,,No,No,No,ST20_FMT_YUV_422_8BIT,Pass-through mode; for YUY2 direct transport
+ST_FRAME_FMT_YUV420PLANAR8,YUV,4:2:0,8-bit,Planar,No,,No,,Yes (yuv420p),Yes,Grayscale Y-only,ST20_FMT_YUV_420_8BIT,RxApp displays luma only; full chroma decode not implemented
+ST_FRAME_FMT_YUV422PLANAR16LE,YUV,4:2:2,10-bit (6-bit LS pad),Planar 16-bit word,No,,No,,No,No,No,ST20_FMT_YUV_422_10BIT,10-bit data stored in 16-bit words with 6 padding bits in LSB
+ST_FRAME_FMT_ARGB,RGB,4:4:4,8-bit,Packed 32-bit,No,,No,,No,No,No,ST20_FMT_RGB_8BIT,Defined in MTL API; not mapped in any app
+ST_FRAME_FMT_BGRA,RGB,4:4:4,8-bit,Packed 32-bit,No,,No,,No,No,No,ST20_FMT_RGB_8BIT,Defined in MTL API; not mapped in any app
+ST_FRAME_FMT_RGB8,RGB,4:4:4,8-bit,Packed 24-bit,Yes,rgb24,Yes,rgb24,No,No,No,ST20_FMT_RGB_8BIT,Only RGB format in FFmpeg plugin; 1 pixel per 3 bytes
+ST_FRAME_FMT_GBRPLANAR10LE,RGB,4:4:4,10-bit,Planar GBR,No,,No,,Yes,Yes,Full color,ST20_FMT_RGB_10BIT,GBR plane order (G=addr[0] B=addr[1] R=addr[2]); TxApp + RxApp
+ST_FRAME_FMT_RGBRFC4175PG4BE10,RGB,4:4:4,10-bit,RFC4175 PG4 Big-Endian,No,,No,,No,No,No,ST20_FMT_RGB_10BIT,On-wire transport format only; 4 pixels per 15 bytes big-endian
+ST_FRAME_FMT_GBRPLANAR12LE,RGB,4:4:4,12-bit,Planar GBR,No,,No,,Yes,Yes,Full color,ST20_FMT_RGB_12BIT,GBR plane order; TxApp + RxApp only
+ST_FRAME_FMT_RGBRFC4175PG2BE12,RGB,4:4:4,12-bit,RFC4175 PG2 Big-Endian,No,,No,,No,No,No,ST20_FMT_RGB_12BIT,On-wire transport format only; 2 pixels per 9 bytes big-endian
